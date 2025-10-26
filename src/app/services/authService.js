@@ -3,16 +3,6 @@ import axios from 'axios'
 // Configuración de la URL del backend
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://transportes-backend.fly.dev'
 
-
-// 🔍 LOGS TEMPORALES - Eliminar después de verificar
-console.log('🔍 Backend URL configurada:', API_URL)
-console.log('🔍 NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
-if (!API_URL) {
-  console.error('❌ ERROR: La variable NEXT_PUBLIC_API_URL no está definida!')
-  console.error('❌ Asegúrate de tener el archivo .env.local en la raíz del proyecto')
-}
-// 🔍 FIN LOGS TEMPORALES
-
 // Crear instancia de axios con configuración base
 const apiClient = axios.create({
   baseURL: API_URL,

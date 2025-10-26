@@ -195,14 +195,22 @@ const ViajeCard = ({ viaje, onEdit, onDelete, onViewDetails }) => {
 
 const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unidades }) => {
   const [formData, setFormData] = useState({
-    unidadId: '',
-    operadorId: '',
-    clienteId: '',
+    idUnidad: '',
+    idOperador: '',
+    idCliente: '',
     origen: '',
     destino: '',
     fechaSalida: '',
+    fechaEstimadaLlegada: '',
     estado: 'PENDIENTE',
-    tipoViaje: 'LOCAL'
+    cargaDescripcion: '',
+    observaciones: '',
+    tarifa: '',
+    distanciaKm: '',
+    tipo: 'LOCAL',
+    responsableLogistica: '',
+    evidenciaUrl: '',
+    creadoPor: ''
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -211,20 +219,40 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
     setIsLoading(true)
     try {
       await onSave({
-        ...formData,
-        unidadId: parseInt(formData.unidadId),
-        operadorId: parseInt(formData.operadorId),
-        clienteId: parseInt(formData.clienteId)
+        idUnidad: parseInt(formData.idUnidad),
+        idOperador: parseInt(formData.idOperador),
+        idCliente: parseInt(formData.idCliente),
+        origen: formData.origen,
+        destino: formData.destino,
+        fechaSalida: formData.fechaSalida,
+        fechaEstimadaLlegada: formData.fechaEstimadaLlegada,
+        estado: formData.estado,
+        cargaDescripcion: formData.cargaDescripcion,
+        observaciones: formData.observaciones || null,
+        tarifa: parseFloat(formData.tarifa),
+        distanciaKm: parseFloat(formData.distanciaKm),
+        tipo: formData.tipo,
+        responsableLogistica: parseInt(formData.responsableLogistica),
+        evidenciaUrl: formData.evidenciaUrl || null,
+        creadoPor: parseInt(formData.creadoPor)
       })
       setFormData({
-        unidadId: '',
-        operadorId: '',
-        clienteId: '',
+        idUnidad: '',
+        idOperador: '',
+        idCliente: '',
         origen: '',
         destino: '',
         fechaSalida: '',
+        fechaEstimadaLlegada: '',
         estado: 'PENDIENTE',
-        tipoViaje: 'LOCAL'
+        cargaDescripcion: '',
+        observaciones: '',
+        tarifa: '',
+        distanciaKm: '',
+        tipo: 'LOCAL',
+        responsableLogistica: '',
+        evidenciaUrl: '',
+        creadoPor: ''
       })
       onClose()
     } catch (error) {
@@ -238,151 +266,296 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-200 sticky top-0 bg-white">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold text-slate-900">Nuevo viaje</h2>
-          <p className="text-sm text-slate-600 mt-1">Programa un nuevo viaje de transporte</p>
+          <p className="text-sm text-slate-600 mt-1">Registra un nuevo viaje con todos sus detalles</p>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Operador */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Operador *
-              </label>
-              <select
-                value={formData.operadorId}
-                onChange={(e) => setFormData({ ...formData, operadorId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="">Selecciona un operador</option>
-                {operadores.map((op) => (
-                  <option key={op.id} value={op.id}>
-                    {op.nombre} - {op.licencia}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Sección: Asignaciones */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <User className="h-5 w-5 mr-2 text-blue-600" />
+              Asignaciones
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Operador *
+                </label>
+                <select
+                  value={formData.idOperador}
+                  onChange={(e) => setFormData({ ...formData, idOperador: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un operador</option>
+                  {operadores.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.nombre} - {op.licencia}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Cliente */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Cliente *
-              </label>
-              <select
-                value={formData.clienteId}
-                onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="">Selecciona un cliente</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.id} value={cliente.id}>
-                    {cliente.nombre} - {cliente.rfc}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Cliente *
+                </label>
+                <select
+                  value={formData.idCliente}
+                  onChange={(e) => setFormData({ ...formData, idCliente: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Unidad */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Unidad (vehículo) *
-              </label>
-              <input
-                type="number"
-                value={formData.unidadId}
-                onChange={(e) => setFormData({ ...formData, unidadId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="ID de la unidad"
-                required
-              />
-              <p className="text-xs text-slate-500 mt-1">Nota: Catálogo de vehículos pendiente</p>
-            </div>
-
-            {/* Fecha de salida */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Fecha de salida *
-              </label>
-              <input
-                type="date"
-                value={formData.fechaSalida}
-                onChange={(e) => setFormData({ ...formData, fechaSalida: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              />
-            </div>
-
-            {/* Origen */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Origen *
-              </label>
-              <input
-                type="text"
-                value={formData.origen}
-                onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="Ej: CDMX, Monterrey"
-                required
-              />
-            </div>
-
-            {/* Destino */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Destino *
-              </label>
-              <input
-                type="text"
-                value={formData.destino}
-                onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="Ej: Guadalajara, Tijuana"
-                required
-              />
-            </div>
-
-            {/* Tipo de viaje */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Tipo de viaje *
-              </label>
-              <select
-                value={formData.tipoViaje}
-                onChange={(e) => setFormData({ ...formData, tipoViaje: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="LOCAL">Local</option>
-                <option value="FORANEO">Foráneo</option>
-                <option value="INTERNACIONAL">Internacional</option>
-              </select>
-            </div>
-
-            {/* Estado */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Estado *
-              </label>
-              <select
-                value={formData.estado}
-                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="EN_CURSO">En curso</option>
-                <option value="COMPLETADO">Completado</option>
-                <option value="CANCELADO">Cancelado</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Unidad *
+                </label>
+                <input
+                  type="number"
+                  value={formData.idUnidad}
+                  onChange={(e) => setFormData({ ...formData, idUnidad: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="ID de unidad"
+                  required
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          {/* Sección: Ruta */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+              Ruta del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Origen *
+                </label>
+                <input
+                  type="text"
+                  value={formData.origen}
+                  onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Ej: CDMX"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Destino *
+                </label>
+                <input
+                  type="text"
+                  value={formData.destino}
+                  onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Ej: Guadalajara"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Distancia (km) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.distanciaKm}
+                  onChange={(e) => setFormData({ ...formData, distanciaKm: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="550.0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de viaje *
+                </label>
+                <select
+                  value={formData.tipo}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="LOCAL">Local</option>
+                  <option value="FORANEO">Foráneo</option>
+                  <option value="INTERNACIONAL">Internacional</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Fechas */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+              Fechas del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha de salida *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaSalida}
+                  onChange={(e) => setFormData({ ...formData, fechaSalida: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha estimada de llegada *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaEstimadaLlegada}
+                  onChange={(e) => setFormData({ ...formData, fechaEstimadaLlegada: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Carga y Costos */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Package className="h-5 w-5 mr-2 text-blue-600" />
+              Carga y Tarifas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Descripción de la carga *
+                </label>
+                <textarea
+                  value={formData.cargaDescripcion}
+                  onChange={(e) => setFormData({ ...formData, cargaDescripcion: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Descripción detallada de la carga..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tarifa ($) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.tarifa}
+                  onChange={(e) => setFormData({ ...formData, tarifa: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="4500.50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Estado *
+                </label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="EN_CURSO">En curso</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Información Adicional */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2 text-blue-600" />
+              Información Adicional
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Responsable de logística (ID Usuario) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.responsableLogistica}
+                  onChange={(e) => setFormData({ ...formData, responsableLogistica: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="1"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Creado por (ID Usuario) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.creadoPor}
+                  onChange={(e) => setFormData({ ...formData, creadoPor: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="1"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Observaciones
+                </label>
+                <textarea
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Entrega prioritaria, cuidado con carga frágil, etc..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  URL de evidencia (opcional)
+                </label>
+                <input
+                  type="url"
+                  value={formData.evidenciaUrl}
+                  onChange={(e) => setFormData({ ...formData, evidenciaUrl: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="https://ejemplo.com/evidencia.jpg"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
@@ -406,28 +579,44 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
 
 const EditViajeModal = ({ isOpen, onClose, onSave, viaje, operadores, clientes }) => {
   const [formData, setFormData] = useState({
-    unidadId: '',
-    operadorId: '',
-    clienteId: '',
+    idUnidad: '',
+    idOperador: '',
+    idCliente: '',
     origen: '',
     destino: '',
     fechaSalida: '',
+    fechaEstimadaLlegada: '',
     estado: 'PENDIENTE',
-    tipoViaje: 'LOCAL'
+    cargaDescripcion: '',
+    observaciones: '',
+    tarifa: '',
+    distanciaKm: '',
+    tipo: 'LOCAL',
+    responsableLogistica: '',
+    evidenciaUrl: '',
+    creadoPor: ''
   })
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (viaje) {
       setFormData({
-        unidadId: viaje.unidadId || '',
-        operadorId: viaje.operadorId || '',
-        clienteId: viaje.clienteId || '',
+        idUnidad: viaje.idUnidad || viaje.unidadId || '',
+        idOperador: viaje.idOperador || viaje.operadorId || '',
+        idCliente: viaje.idCliente || viaje.clienteId || '',
         origen: viaje.origen || '',
         destino: viaje.destino || '',
         fechaSalida: viaje.fechaSalida || '',
+        fechaEstimadaLlegada: viaje.fechaEstimadaLlegada || '',
         estado: viaje.estado || 'PENDIENTE',
-        tipoViaje: viaje.tipoViaje || 'LOCAL'
+        cargaDescripcion: viaje.cargaDescripcion || '',
+        observaciones: viaje.observaciones || '',
+        tarifa: viaje.tarifa || '',
+        distanciaKm: viaje.distanciaKm || '',
+        tipo: viaje.tipo || viaje.tipoViaje || 'LOCAL',
+        responsableLogistica: viaje.responsableLogistica || '',
+        evidenciaUrl: viaje.evidenciaUrl || '',
+        creadoPor: viaje.creadoPor || ''
       })
     }
   }, [viaje])
@@ -437,10 +626,22 @@ const EditViajeModal = ({ isOpen, onClose, onSave, viaje, operadores, clientes }
     setIsLoading(true)
     try {
       await onSave(viaje.id, {
-        ...formData,
-        unidadId: parseInt(formData.unidadId),
-        operadorId: parseInt(formData.operadorId),
-        clienteId: parseInt(formData.clienteId)
+        idUnidad: parseInt(formData.idUnidad),
+        idOperador: parseInt(formData.idOperador),
+        idCliente: parseInt(formData.idCliente),
+        origen: formData.origen,
+        destino: formData.destino,
+        fechaSalida: formData.fechaSalida,
+        fechaEstimadaLlegada: formData.fechaEstimadaLlegada,
+        estado: formData.estado,
+        cargaDescripcion: formData.cargaDescripcion,
+        observaciones: formData.observaciones || null,
+        tarifa: parseFloat(formData.tarifa),
+        distanciaKm: parseFloat(formData.distanciaKm),
+        tipo: formData.tipo,
+        responsableLogistica: parseInt(formData.responsableLogistica),
+        evidenciaUrl: formData.evidenciaUrl || null,
+        creadoPor: parseInt(formData.creadoPor)
       })
       onClose()
     } catch (error) {
@@ -454,150 +655,288 @@ const EditViajeModal = ({ isOpen, onClose, onSave, viaje, operadores, clientes }
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-200 sticky top-0 bg-white">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold text-slate-900">Editar viaje #{viaje?.id}</h2>
           <p className="text-sm text-slate-600 mt-1">Actualiza la información del viaje</p>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Operador */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Operador *
-              </label>
-              <select
-                value={formData.operadorId}
-                onChange={(e) => setFormData({ ...formData, operadorId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="">Selecciona un operador</option>
-                {operadores.map((op) => (
-                  <option key={op.id} value={op.id}>
-                    {op.nombre} - {op.licencia}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Sección: Asignaciones */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <User className="h-5 w-5 mr-2 text-blue-600" />
+              Asignaciones
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Operador *
+                </label>
+                <select
+                  value={formData.idOperador}
+                  onChange={(e) => setFormData({ ...formData, idOperador: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un operador</option>
+                  {operadores.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.nombre} - {op.licencia}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Cliente */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Cliente *
-              </label>
-              <select
-                value={formData.clienteId}
-                onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="">Selecciona un cliente</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.id} value={cliente.id}>
-                    {cliente.nombre} - {cliente.rfc}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Cliente *
+                </label>
+                <select
+                  value={formData.idCliente}
+                  onChange={(e) => setFormData({ ...formData, idCliente: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Unidad */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Unidad (vehículo) *
-              </label>
-              <input
-                type="number"
-                value={formData.unidadId}
-                onChange={(e) => setFormData({ ...formData, unidadId: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="ID de la unidad"
-                required
-              />
-            </div>
-
-            {/* Fecha de salida */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Fecha de salida *
-              </label>
-              <input
-                type="date"
-                value={formData.fechaSalida}
-                onChange={(e) => setFormData({ ...formData, fechaSalida: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              />
-            </div>
-
-            {/* Origen */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Origen *
-              </label>
-              <input
-                type="text"
-                value={formData.origen}
-                onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="Ej: CDMX, Monterrey"
-                required
-              />
-            </div>
-
-            {/* Destino */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Destino *
-              </label>
-              <input
-                type="text"
-                value={formData.destino}
-                onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="Ej: Guadalajara, Tijuana"
-                required
-              />
-            </div>
-
-            {/* Tipo de viaje */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Tipo de viaje *
-              </label>
-              <select
-                value={formData.tipoViaje}
-                onChange={(e) => setFormData({ ...formData, tipoViaje: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="LOCAL">Local</option>
-                <option value="FORANEO">Foráneo</option>
-                <option value="INTERNACIONAL">Internacional</option>
-              </select>
-            </div>
-
-            {/* Estado */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Estado *
-              </label>
-              <select
-                value={formData.estado}
-                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
-              >
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="EN_CURSO">En curso</option>
-                <option value="COMPLETADO">Completado</option>
-                <option value="CANCELADO">Cancelado</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Unidad *
+                </label>
+                <input
+                  type="number"
+                  value={formData.idUnidad}
+                  onChange={(e) => setFormData({ ...formData, idUnidad: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="ID de unidad"
+                  required
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          {/* Sección: Ruta */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+              Ruta del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Origen *
+                </label>
+                <input
+                  type="text"
+                  value={formData.origen}
+                  onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Destino *
+                </label>
+                <input
+                  type="text"
+                  value={formData.destino}
+                  onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Distancia (km) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.distanciaKm}
+                  onChange={(e) => setFormData({ ...formData, distanciaKm: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de viaje *
+                </label>
+                <select
+                  value={formData.tipo}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="LOCAL">Local</option>
+                  <option value="FORANEO">Foráneo</option>
+                  <option value="INTERNACIONAL">Internacional</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Fechas */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+              Fechas del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha de salida *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaSalida}
+                  onChange={(e) => setFormData({ ...formData, fechaSalida: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha estimada de llegada *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaEstimadaLlegada}
+                  onChange={(e) => setFormData({ ...formData, fechaEstimadaLlegada: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Carga y Costos */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Package className="h-5 w-5 mr-2 text-blue-600" />
+              Carga y Tarifas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Descripción de la carga *
+                </label>
+                <textarea
+                  value={formData.cargaDescripcion}
+                  onChange={(e) => setFormData({ ...formData, cargaDescripcion: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tarifa ($) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.tarifa}
+                  onChange={(e) => setFormData({ ...formData, tarifa: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Estado *
+                </label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="EN_CURSO">En curso</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Información Adicional */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2 text-blue-600" />
+              Información Adicional
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Responsable de logística (ID Usuario) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.responsableLogistica}
+                  onChange={(e) => setFormData({ ...formData, responsableLogistica: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Creado por (ID Usuario) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.creadoPor}
+                  onChange={(e) => setFormData({ ...formData, creadoPor: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Observaciones
+                </label>
+                <textarea
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  rows={3}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  URL de evidencia (opcional)
+                </label>
+                <input
+                  type="url"
+                  value={formData.evidenciaUrl}
+                  onChange={(e) => setFormData({ ...formData, evidenciaUrl: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="https://ejemplo.com/evidencia.jpg"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}

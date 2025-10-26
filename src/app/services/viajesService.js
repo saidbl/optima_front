@@ -17,10 +17,30 @@ export const viajesService = {
     }
   },
 
-  // Crear un nuevo viaje
+  // Crear un nuevo viaje con el formato actualizado
   async createViaje(viajeData) {
     try {
-      const response = await apiClient.post('/api/viajes', viajeData)
+      // Formato del body según la API actualizada
+      const body = {
+        idUnidad: viajeData.idUnidad,
+        idOperador: viajeData.idOperador,
+        idCliente: viajeData.idCliente,
+        origen: viajeData.origen,
+        destino: viajeData.destino,
+        fechaSalida: viajeData.fechaSalida,
+        fechaEstimadaLlegada: viajeData.fechaEstimadaLlegada,
+        estado: viajeData.estado || 'PENDIENTE',
+        cargaDescripcion: viajeData.cargaDescripcion,
+        observaciones: viajeData.observaciones || null,
+        tarifa: viajeData.tarifa,
+        distanciaKm: viajeData.distanciaKm,
+        tipo: viajeData.tipo || 'LOCAL',
+        responsableLogistica: viajeData.responsableLogistica,
+        evidenciaUrl: viajeData.evidenciaUrl || null,
+        creadoPor: viajeData.creadoPor
+      }
+      
+      const response = await apiClient.post('/api/viajes', body)
       return response.data
     } catch (error) {
       console.error('Error al crear viaje:', error)
@@ -32,7 +52,26 @@ export const viajesService = {
   // Actualizar un viaje existente
   async updateViaje(id, viajeData) {
     try {
-      const response = await apiClient.put(`/api/viajes/${id}`, viajeData)
+      const body = {
+        idUnidad: viajeData.idUnidad,
+        idOperador: viajeData.idOperador,
+        idCliente: viajeData.idCliente,
+        origen: viajeData.origen,
+        destino: viajeData.destino,
+        fechaSalida: viajeData.fechaSalida,
+        fechaEstimadaLlegada: viajeData.fechaEstimadaLlegada,
+        estado: viajeData.estado,
+        cargaDescripcion: viajeData.cargaDescripcion,
+        observaciones: viajeData.observaciones || null,
+        tarifa: viajeData.tarifa,
+        distanciaKm: viajeData.distanciaKm,
+        tipo: viajeData.tipo,
+        responsableLogistica: viajeData.responsableLogistica,
+        evidenciaUrl: viajeData.evidenciaUrl || null,
+        creadoPor: viajeData.creadoPor
+      }
+      
+      const response = await apiClient.put(`/api/viajes/${id}`, body)
       return response.data
     } catch (error) {
       console.error('Error al actualizar viaje:', error)

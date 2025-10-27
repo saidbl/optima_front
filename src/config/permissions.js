@@ -9,10 +9,10 @@
 // Definición de roles (puedes agregar más según necesites)
 export const ROLES = {
   ADMIN: 'ADMIN',
-  OPERADOR: 'OPERADOR',
-  CLIENTE: 'CLIENTE',
-  CONTADOR: 'CONTADOR',
-  SUPERVISOR: 'SUPERVISOR',
+  ALMACEN: 'ALMACEN',
+  NOMINA: 'NOMINA',
+  AVIAJE: 'AVIAJE',
+  RVIAJE: 'RVIAJE',
   // Agrega más roles aquí según los vayas creando
 }
 

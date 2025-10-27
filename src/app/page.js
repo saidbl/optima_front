@@ -57,8 +57,7 @@ export default function LoginPage() {
                 <Truck className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-blue-900">Optima</h1>
-                <p className="text-xs text-blue-500 font-medium">TRANSPORTES</p>
+                <h1 className="text-xl font-bold text-blue-900">Fmpmex</h1>
               </div>
             </div>
 
@@ -104,7 +103,7 @@ export default function LoginPage() {
 
           {/* Footer del panel */}
           <div className="text-xs text-blue-500 border-t border-blue-200 pt-6">
-            <p>© 2025 Optima Transportes S.A. de C.V.</p>
+            <p>© 2025 Fmpmex</p>
             <p className="mt-1">Todos los derechos reservados</p>
           </div>
         </div>
@@ -118,7 +117,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-900 rounded-xl mb-4">
               <Truck className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-blue-900">Optima Transportes</h1>
+            <h1 className="text-xl font-bold text-blue-900">Fmpmex</h1>
             <p className="text-xs text-blue-500 mt-1 font-medium">SISTEMA DE GESTIÓN LOGÍSTICA</p>
           </div>
 
@@ -207,15 +206,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Soporte */}
-          <div className="mt-8 pt-6 border-t border-blue-200">
-            <p className="text-center text-sm text-blue-600">
-              ¿Necesitas asistencia técnica?{' '}
-              <a href="#" className="font-semibold text-blue-900 hover:text-blue-700 transition-colors">
-                Contactar soporte
-              </a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

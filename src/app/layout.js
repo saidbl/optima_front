@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Optima transportes",
+  title: "Fmpmex",
   description: "Plataforma de gestión de transportes y logística",
 };
 

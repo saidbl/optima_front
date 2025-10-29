@@ -71,7 +71,6 @@ apiClient.interceptors.request.use(
         return Promise.reject({
           response: {
             status: 401,
-            data: { message: 'Token expirado' }
           }
         })
       }

@@ -18,7 +18,8 @@ import {
   User,
   Package,
   Fuel,
-  Receipt
+  Receipt,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { bitacoraService } from '@/app/services/bitacoraService'
@@ -211,6 +212,8 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
     comentarios: '',
     numeroFactura: ''
   })
+  const [errors, setErrors] = useState({})
+  const [validationStep, setValidationStep] = useState('general') // 'general', 'operacional', 'costos'
   const [isLoading, setIsLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [costoDiesel, setCostoDiesel] = useState(0) // Estado para mostrar el cálculo
@@ -220,6 +223,9 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
     if (isOpen) {
       const user = authService.getUser()
       setCurrentUser(user)
+      // Limpiar errores al abrir el modal
+      setErrors({})
+      setValidationStep('general')
     }
   }, [isOpen])
 
@@ -230,6 +236,122 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
     const costo = litros * precio
     setCostoDiesel(costo)
   }, [formData.dieselLitros, formData.precioDiesel])
+
+  // Función de validación por pasos
+  const validateForm = () => {
+    const newErrors = {}
+
+    // PASO 1: Información General
+    if (validationStep === 'general') {
+      // Validar viaje
+      if (!formData.viajeId) {
+        newErrors.viajeId = 'Debes seleccionar un viaje'
+      }
+
+      // Validar folio
+      if (!formData.folio.trim()) {
+        newErrors.folio = 'El folio es obligatorio'
+      } else if (formData.folio.trim().length < 5) {
+        newErrors.folio = 'El folio debe tener al menos 5 caracteres'
+      }
+
+      // Validar cliente
+      if (!formData.clienteId) {
+        newErrors.clienteId = 'Debes seleccionar un cliente'
+      }
+
+      // Validar origen
+      if (!formData.origen.trim()) {
+        newErrors.origen = 'El origen es obligatorio'
+      } else if (formData.origen.trim().length < 3) {
+        newErrors.origen = 'El origen debe tener al menos 3 caracteres'
+      }
+
+      // Validar destino
+      if (!formData.destino.trim()) {
+        newErrors.destino = 'El destino es obligatorio'
+      } else if (formData.destino.trim().length < 3) {
+        newErrors.destino = 'El destino debe tener al menos 3 caracteres'
+      } else if (formData.destino.toLowerCase() === formData.origen.toLowerCase()) {
+        newErrors.destino = 'El destino no puede ser igual al origen'
+      }
+
+      // Validar fechas
+      if (!formData.fechaCarga) {
+        newErrors.fechaCarga = 'La fecha de carga es obligatoria'
+      }
+
+      if (!formData.fechaEntrega) {
+        newErrors.fechaEntrega = 'La fecha de entrega es obligatoria'
+      }
+
+      // Validar que la fecha de entrega sea posterior o igual a la de carga
+      if (formData.fechaCarga && formData.fechaEntrega) {
+        const fechaCarga = new Date(formData.fechaCarga)
+        const fechaEntrega = new Date(formData.fechaEntrega)
+        
+        if (fechaEntrega < fechaCarga) {
+          newErrors.fechaEntrega = 'La fecha de entrega debe ser posterior o igual a la fecha de carga'
+        }
+      }
+
+      // Validar hora de entrega
+      if (!formData.horaEntrega) {
+        newErrors.horaEntrega = 'La hora de entrega es obligatoria'
+      }
+    }
+
+    // PASO 2: Datos Operacionales
+    if (validationStep === 'operacional') {
+      // Validar operador
+      if (!formData.operadorId) {
+        newErrors.operadorId = 'Debes seleccionar un operador'
+      }
+
+      // Validar unidad
+      if (!formData.unidadId) {
+        newErrors.unidadId = 'Debes seleccionar una unidad'
+      }
+
+      // Validar caja
+      if (!formData.caja.trim()) {
+        newErrors.caja = 'El número de caja es obligatorio'
+      } else if (formData.caja.trim().length < 3) {
+        newErrors.caja = 'El número de caja debe tener al menos 3 caracteres'
+      }
+    }
+
+    // PASO 3: Costos y Gastos
+    if (validationStep === 'costos') {
+      // Validar gastos (opcionales pero deben ser valores válidos si se ingresan)
+      if (formData.casetas && parseFloat(formData.casetas) < 0) {
+        newErrors.casetas = 'El costo de casetas no puede ser negativo'
+      }
+
+      if (formData.dieselLitros && parseFloat(formData.dieselLitros) < 0) {
+        newErrors.dieselLitros = 'Los litros de diesel no pueden ser negativos'
+      }
+
+      if (formData.precioDiesel && parseFloat(formData.precioDiesel) < 0) {
+        newErrors.precioDiesel = 'El precio del diesel no puede ser negativo'
+      }
+
+      if (formData.comisionOperador && parseFloat(formData.comisionOperador) < 0) {
+        newErrors.comisionOperador = 'La comisión del operador no puede ser negativa'
+      }
+
+      if (formData.gastosExtras && parseFloat(formData.gastosExtras) < 0) {
+        newErrors.gastosExtras = 'Los gastos extras no pueden ser negativos'
+      }
+
+      if (!formData.costoTotal || parseFloat(formData.costoTotal) <= 0) {
+        newErrors.costoTotal = 'El costo total es obligatorio y debe ser mayor a 0'
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Autocompletar datos cuando se selecciona un viaje
   const handleViajeChange = (viajeId) => {
@@ -251,7 +373,33 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
+    // Validar paso actual
+    if (!validateForm()) {
+      // Si hay errores, mostrar mensaje según el paso
+      const stepNames = {
+        'general': 'Información General',
+        'operacional': 'Datos Operacionales',
+        'costos': 'Costos y Gastos'
+      }
+      toast.error(`Corrige los errores en: ${stepNames[validationStep]}`)
+      return
+    }
+
+    // Si pasó la validación, avanzar al siguiente paso
+    if (validationStep === 'general') {
+      setValidationStep('operacional')
+      toast.success('Información general validada ✓')
+      return
+    }
+
+    if (validationStep === 'operacional') {
+      setValidationStep('costos')
+      toast.success('Datos operacionales validados ✓')
+      return
+    }
+
+    // Si llegamos aquí, estamos en el paso final (costos) y todo está validado
     if (!currentUser?.id) {
       toast.error('No se pudo obtener el usuario autenticado')
       return
@@ -301,6 +449,8 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
         numeroFactura: ''
       })
       setCostoDiesel(0)
+      setValidationStep('general')
+      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving bitácora:', error)
@@ -311,12 +461,55 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
 
   if (!isOpen) return null
 
+  const steps = [
+    { id: 'general', name: 'Información General', icon: FileText },
+    { id: 'operacional', name: 'Datos Operacionales', icon: Truck },
+    { id: 'costos', name: 'Costos y Gastos', icon: DollarSign }
+  ]
+
+  const currentStepIndex = steps.findIndex(s => s.id === validationStep)
+
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full my-8">
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Nueva bitácora de viaje</h2>
           <p className="text-sm text-slate-600 mt-1">Registra un nuevo viaje con todos sus detalles</p>
+          
+          {/* Indicador de pasos */}
+          <div className="flex items-center justify-between mt-4 px-4">
+            {steps.map((step, index) => {
+              const Icon = step.icon
+              const isActive = step.id === validationStep
+              const isCompleted = index < currentStepIndex
+              
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                      isCompleted 
+                        ? 'bg-green-500 text-white' 
+                        : isActive 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-slate-200 text-slate-400'
+                    }`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className={`text-xs mt-2 font-medium ${
+                      isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-slate-400'
+                    }`}>
+                      {step.name}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 mb-6 rounded transition-all ${
+                      isCompleted ? 'bg-green-500' : 'bg-slate-200'
+                    }`} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
@@ -334,9 +527,15 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   </label>
                   <select
                     value={formData.viajeId}
-                    onChange={(e) => handleViajeChange(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      handleViajeChange(e.target.value)
+                      if (errors.viajeId) setErrors({ ...errors, viajeId: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.viajeId 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   >
                     <option value="">Selecciona un viaje</option>
                     {viajes && viajes.map((viaje) => (
@@ -345,7 +544,14 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-500 mt-1">El viaje autocompletará algunos campos</p>
+                  {errors.viajeId ? (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.viajeId}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500 mt-1">El viaje autocompletará algunos campos</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -354,11 +560,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="text"
                     value={formData.folio}
-                    onChange={(e) => setFormData({ ...formData, folio: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, folio: e.target.value })
+                      if (errors.folio) setErrors({ ...errors, folio: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.folio 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="BIT-2025-001"
-                    required
                   />
+                  {errors.folio && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.folio}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -366,9 +584,15 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   </label>
                   <select
                     value={formData.clienteId}
-                    onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, clienteId: e.target.value })
+                      if (errors.clienteId) setErrors({ ...errors, clienteId: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.clienteId 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   >
                     <option value="">Selecciona un cliente</option>
                     {clientes && clientes.map((cliente) => (
@@ -407,11 +631,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="text"
                     value={formData.origen}
-                    onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, origen: e.target.value })
+                      if (errors.origen) setErrors({ ...errors, origen: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.origen 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="Ciudad de México"
-                    required
                   />
+                  {errors.origen && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.origen}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -420,11 +656,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="text"
                     value={formData.destino}
-                    onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, destino: e.target.value })
+                      if (errors.destino) setErrors({ ...errors, destino: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.destino 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="Guadalajara"
-                    required
                   />
+                  {errors.destino && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.destino}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -443,10 +691,22 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="date"
                     value={formData.fechaCarga}
-                    onChange={(e) => setFormData({ ...formData, fechaCarga: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, fechaCarga: e.target.value })
+                      if (errors.fechaCarga) setErrors({ ...errors, fechaCarga: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.fechaCarga 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   />
+                  {errors.fechaCarga && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.fechaCarga}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -455,10 +715,22 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="date"
                     value={formData.fechaEntrega}
-                    onChange={(e) => setFormData({ ...formData, fechaEntrega: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, fechaEntrega: e.target.value })
+                      if (errors.fechaEntrega) setErrors({ ...errors, fechaEntrega: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.fechaEntrega 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   />
+                  {errors.fechaEntrega && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.fechaEntrega}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -467,10 +739,22 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="time"
                     value={formData.horaEntrega}
-                    onChange={(e) => setFormData({ ...formData, horaEntrega: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, horaEntrega: e.target.value })
+                      if (errors.horaEntrega) setErrors({ ...errors, horaEntrega: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.horaEntrega 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   />
+                  {errors.horaEntrega && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.horaEntrega}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -488,9 +772,15 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   </label>
                   <select
                     value={formData.operadorId}
-                    onChange={(e) => setFormData({ ...formData, operadorId: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, operadorId: e.target.value })
+                      if (errors.operadorId) setErrors({ ...errors, operadorId: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.operadorId 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   >
                     <option value="">Selecciona un operador</option>
                     {operadores && operadores.map((operador) => (
@@ -499,6 +789,12 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                       </option>
                     ))}
                   </select>
+                  {errors.operadorId && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.operadorId}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -506,9 +802,15 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   </label>
                   <select
                     value={formData.unidadId}
-                    onChange={(e) => setFormData({ ...formData, unidadId: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, unidadId: e.target.value })
+                      if (errors.unidadId) setErrors({ ...errors, unidadId: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.unidadId 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   >
                     <option value="">Selecciona una unidad</option>
                     {unidades && unidades.map((unidad) => (
@@ -517,6 +819,12 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                       </option>
                     ))}
                   </select>
+                  {errors.unidadId && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.unidadId}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -525,11 +833,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                   <input
                     type="text"
                     value={formData.caja}
-                    onChange={(e) => setFormData({ ...formData, caja: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, caja: e.target.value })
+                      if (errors.caja) setErrors({ ...errors, caja: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.caja 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="CAJA-001"
-                    required
                   />
+                  {errors.caja && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.caja}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -549,10 +869,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.casetas}
-                    onChange={(e) => setFormData({ ...formData, casetas: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, casetas: e.target.value })
+                      if (errors.casetas) setErrors({ ...errors, casetas: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.casetas 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="850.50"
                   />
+                  {errors.casetas && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.casetas}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -562,10 +895,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.dieselLitros}
-                    onChange={(e) => setFormData({ ...formData, dieselLitros: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, dieselLitros: e.target.value })
+                      if (errors.dieselLitros) setErrors({ ...errors, dieselLitros: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.dieselLitros 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="120.75"
                   />
+                  {errors.dieselLitros && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.dieselLitros}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -575,10 +921,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.precioDiesel}
-                    onChange={(e) => setFormData({ ...formData, precioDiesel: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, precioDiesel: e.target.value })
+                      if (errors.precioDiesel) setErrors({ ...errors, precioDiesel: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.precioDiesel 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="24.50"
                   />
+                  {errors.precioDiesel && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.precioDiesel}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -605,10 +964,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.comisionOperador}
-                    onChange={(e) => setFormData({ ...formData, comisionOperador: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, comisionOperador: e.target.value })
+                      if (errors.comisionOperador) setErrors({ ...errors, comisionOperador: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.comisionOperador 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="1500.00"
                   />
+                  {errors.comisionOperador && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.comisionOperador}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -618,10 +990,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.gastosExtras}
-                    onChange={(e) => setFormData({ ...formData, gastosExtras: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, gastosExtras: e.target.value })
+                      if (errors.gastosExtras) setErrors({ ...errors, gastosExtras: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.gastosExtras 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="250.00"
                   />
+                  {errors.gastosExtras && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.gastosExtras}
+                    </p>
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -631,11 +1016,23 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
                     type="number"
                     step="0.01"
                     value={formData.costoTotal}
-                    onChange={(e) => setFormData({ ...formData, costoTotal: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, costoTotal: e.target.value })
+                      if (errors.costoTotal) setErrors({ ...errors, costoTotal: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                      errors.costoTotal 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                     placeholder="5800.00"
-                    required
                   />
+                  {errors.costoTotal && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.costoTotal}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -689,7 +1086,7 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
               disabled={isLoading || !currentUser}
               className="px-6 cursor-pointer py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Guardando...' : 'Crear bitácora'}
+              {isLoading ? 'Guardando...' : validationStep === 'costos' ? 'Crear bitácora' : 'Continuar →'}
             </button>
           </div>
         </form>

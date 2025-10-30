@@ -15,7 +15,8 @@ import {
   Calendar,
   MapPin,
   FileText,
-  Eye
+  Eye,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { clientsService } from '@/app/services/clientsService'
@@ -144,10 +145,70 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
     telefono: '',
     correo: ''
   })
+  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+
+  // Limpiar errores al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({})
+    }
+  }, [isOpen])
+
+  // Función de validación
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'El nombre es obligatorio'
+    } else if (formData.nombre.trim().length < 3) {
+      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres'
+    }
+
+    // Validar RFC
+    if (!formData.rfc.trim()) {
+      newErrors.rfc = 'El RFC es obligatorio'
+    } else if (formData.rfc.trim().length < 12 || formData.rfc.trim().length > 13) {
+      newErrors.rfc = 'El RFC debe tener 12 o 13 caracteres'
+    } else if (!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(formData.rfc.trim())) {
+      newErrors.rfc = 'El formato del RFC no es válido'
+    }
+
+    // Validar teléfono
+    if (!formData.telefono.trim()) {
+      newErrors.telefono = 'El teléfono es obligatorio'
+    } else if (!/^\d{10}$/.test(formData.telefono.replace(/\s/g, ''))) {
+      newErrors.telefono = 'El teléfono debe tener 10 dígitos'
+    }
+
+    // Validar correo
+    if (!formData.correo.trim()) {
+      newErrors.correo = 'El correo electrónico es obligatorio'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo.trim())) {
+      newErrors.correo = 'El formato del correo no es válido'
+    }
+
+    // Validar dirección
+    if (!formData.direccion.trim()) {
+      newErrors.direccion = 'La dirección es obligatoria'
+    } else if (formData.direccion.trim().length < 10) {
+      newErrors.direccion = 'La dirección debe tener al menos 10 caracteres'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validar formulario
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
+      return
+    }
+
     setIsLoading(true)
     try {
       await onSave(formData)
@@ -158,6 +219,7 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
         telefono: '',
         correo: ''
       })
+      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving client:', error)
@@ -185,10 +247,23 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, nombre: e.target.value })
+                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.nombre 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="Empresa S.A. de C.V."
               />
+              {errors.nombre && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.nombre}
+                </p>
+              )}
             </div>
 
             <div>
@@ -198,11 +273,24 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="text"
                 value={formData.rfc}
-                onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, rfc: e.target.value.toUpperCase() })
+                  if (errors.rfc) setErrors({ ...errors, rfc: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.rfc 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
                 maxLength={13}
+                placeholder="ABC123456XYZ"
               />
+              {errors.rfc && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.rfc}
+                </p>
+              )}
             </div>
 
             <div>
@@ -212,10 +300,24 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, telefono: e.target.value })
+                  if (errors.telefono) setErrors({ ...errors, telefono: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.telefono 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="5551234567"
+                maxLength={10}
               />
+              {errors.telefono && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.telefono}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -225,10 +327,23 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="email"
                 value={formData.correo}
-                onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, correo: e.target.value })
+                  if (errors.correo) setErrors({ ...errors, correo: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.correo 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="contacto@empresa.com"
               />
+              {errors.correo && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.correo}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -237,11 +352,24 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
               </label>
               <textarea
                 value={formData.direccion}
-                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                onChange={(e) => {
+                  setFormData({ ...formData, direccion: e.target.value })
+                  if (errors.direccion) setErrors({ ...errors, direccion: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.direccion 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
                 rows={3}
-                required
+                placeholder="Calle, número, colonia, ciudad, estado"
               />
+              {errors.direccion && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.direccion}
+                </p>
+              )}
             </div>
           </div>
 

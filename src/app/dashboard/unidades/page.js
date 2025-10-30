@@ -201,6 +201,7 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
     fechaUltimoMto: '',
     estado: 'ACTIVA'
   })
+  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -209,8 +210,86 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
     setCurrentUser(user)
   }, [])
 
+  // Limpiar errores al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({})
+    }
+  }, [isOpen])
+
+  // Función de validación
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Validar placas
+    if (!formData.placas.trim()) {
+      newErrors.placas = 'Las placas son obligatorias'
+    } else if (formData.placas.trim().length < 5) {
+      newErrors.placas = 'Las placas deben tener al menos 5 caracteres'
+    } else if (!/^[A-Z0-9\-]+$/i.test(formData.placas.trim())) {
+      newErrors.placas = 'Las placas solo pueden contener letras, números y guiones'
+    }
+
+    // Validar marca
+    if (!formData.marca.trim()) {
+      newErrors.marca = 'La marca es obligatoria'
+    } else if (formData.marca.trim().length < 2) {
+      newErrors.marca = 'La marca debe tener al menos 2 caracteres'
+    }
+
+    // Validar modelo
+    if (!formData.modelo.trim()) {
+      newErrors.modelo = 'El modelo es obligatorio'
+    } else if (formData.modelo.trim().length < 2) {
+      newErrors.modelo = 'El modelo debe tener al menos 2 caracteres'
+    }
+
+    // Validar año
+    const currentYear = new Date().getFullYear()
+    const anio = parseInt(formData.anio)
+    if (!formData.anio) {
+      newErrors.anio = 'El año es obligatorio'
+    } else if (isNaN(anio) || anio < 1900 || anio > currentYear + 1) {
+      newErrors.anio = `El año debe estar entre 1900 y ${currentYear + 1}`
+    }
+
+    // Validar tipo
+    if (!formData.tipo) {
+      newErrors.tipo = 'Debes seleccionar un tipo de unidad'
+    }
+
+    // Validar kilometraje (opcional pero debe ser válido si se ingresa)
+    if (formData.kilometrajeActual && parseFloat(formData.kilometrajeActual) < 0) {
+      newErrors.kilometrajeActual = 'El kilometraje no puede ser negativo'
+    }
+
+    // Validar fecha de último mantenimiento (opcional pero debe ser válida)
+    if (formData.fechaUltimoMto) {
+      const fechaMto = new Date(formData.fechaUltimoMto)
+      const today = new Date()
+      
+      if (fechaMto > today) {
+        newErrors.fechaUltimoMto = 'La fecha de mantenimiento no puede ser futura'
+      }
+    }
+
+    // Validar estado
+    if (!formData.estado) {
+      newErrors.estado = 'Debes seleccionar un estado'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validar formulario
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
+      return
+    }
 
     if (!currentUser?.id) {
       toast.error('No se pudo identificar el usuario autenticado')
@@ -236,6 +315,7 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
         fechaUltimoMto: '',
         estado: 'ACTIVA'
       })
+      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving unidad:', error)
@@ -270,11 +350,21 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   <input
                     type="text"
                     value={formData.placas}
-                    onChange={(e) => setFormData({ ...formData, placas: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, placas: e.target.value })
+                      if (errors.placas) setErrors({ ...errors, placas: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.placas ? 'border-red-500' : 'border-slate-200'
+                    }`}
                     placeholder="TX-9021-B"
-                    required
                   />
+                  {errors.placas && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.placas}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -283,11 +373,21 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   <input
                     type="text"
                     value={formData.marca}
-                    onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, marca: e.target.value })
+                      if (errors.marca) setErrors({ ...errors, marca: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.marca ? 'border-red-500' : 'border-slate-200'
+                    }`}
                     placeholder="Freightliner"
-                    required
                   />
+                  {errors.marca && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.marca}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -296,11 +396,21 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   <input
                     type="text"
                     value={formData.modelo}
-                    onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, modelo: e.target.value })
+                      if (errors.modelo) setErrors({ ...errors, modelo: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.modelo ? 'border-red-500' : 'border-slate-200'
+                    }`}
                     placeholder="Cascadia"
-                    required
                   />
+                  {errors.modelo && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.modelo}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -309,12 +419,22 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   <input
                     type="number"
                     value={formData.anio}
-                    onChange={(e) => setFormData({ ...formData, anio: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, anio: e.target.value })
+                      if (errors.anio) setErrors({ ...errors, anio: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.anio ? 'border-red-500' : 'border-slate-200'
+                    }`}
                     min="1900"
                     max={new Date().getFullYear() + 1}
-                    required
                   />
+                  {errors.anio && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.anio}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -332,9 +452,13 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   </label>
                   <select
                     value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, tipo: e.target.value })
+                      if (errors.tipo) setErrors({ ...errors, tipo: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.tipo ? 'border-red-500' : 'border-slate-200'
+                    }`}
                   >
                     <option value="TRACTOCAMION">Tractocamión</option>
                     <option value="CAMION">Camión</option>
@@ -342,6 +466,12 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                     <option value="REMOLQUE">Remolque</option>
                     <option value="SEMIREMOLQUE">Semiremolque</option>
                   </select>
+                  {errors.tipo && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.tipo}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -349,14 +479,24 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   </label>
                   <select
                     value={formData.estado}
-                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, estado: e.target.value })
+                      if (errors.estado) setErrors({ ...errors, estado: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.estado ? 'border-red-500' : 'border-slate-200'
+                    }`}
                   >
                     <option value="ACTIVA">Activa</option>
                     <option value="MANTENIMIENTO">Mantenimiento</option>
                     <option value="INACTIVA">Inactiva</option>
                   </select>
+                  {errors.estado && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.estado}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -376,11 +516,21 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                     type="number"
                     step="0.1"
                     value={formData.kilometrajeActual}
-                    onChange={(e) => setFormData({ ...formData, kilometrajeActual: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                    onChange={(e) => {
+                      setFormData({ ...formData, kilometrajeActual: e.target.value })
+                      if (errors.kilometrajeActual) setErrors({ ...errors, kilometrajeActual: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.kilometrajeActual ? 'border-red-500' : 'border-slate-200'
+                    }`}
                     placeholder="158000.5"
-                    required
                   />
+                  {errors.kilometrajeActual && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.kilometrajeActual}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -389,10 +539,20 @@ const CreateUnidadModal = ({ isOpen, onClose, onSave }) => {
                   <input
                     type="date"
                     value={formData.fechaUltimoMto}
-                    onChange={(e) => setFormData({ ...formData, fechaUltimoMto: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, fechaUltimoMto: e.target.value })
+                      if (errors.fechaUltimoMto) setErrors({ ...errors, fechaUltimoMto: '' })
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900 ${
+                      errors.fechaUltimoMto ? 'border-red-500' : 'border-slate-200'
+                    }`}
                   />
+                  {errors.fechaUltimoMto && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.fechaUltimoMto}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

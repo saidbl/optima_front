@@ -200,10 +200,79 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
     usuarioId: '',
     activo: true
   })
+  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+
+  // Limpiar errores al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({})
+    }
+  }, [isOpen])
+
+  // Función de validación
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'El nombre es obligatorio'
+    } else if (formData.nombre.trim().length < 3) {
+      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres'
+    }
+
+    // Validar teléfono
+    if (!formData.telefono.trim()) {
+      newErrors.telefono = 'El teléfono es obligatorio'
+    } else if (!/^\d{10}$/.test(formData.telefono.replace(/\s/g, ''))) {
+      newErrors.telefono = 'El teléfono debe tener 10 dígitos'
+    }
+
+    // Validar dirección
+    if (!formData.direccion.trim()) {
+      newErrors.direccion = 'La dirección es obligatoria'
+    } else if (formData.direccion.trim().length < 10) {
+      newErrors.direccion = 'La dirección debe tener al menos 10 caracteres'
+    }
+
+    // Validar número de licencia
+    if (!formData.licenciaNumero.trim()) {
+      newErrors.licenciaNumero = 'El número de licencia es obligatorio'
+    } else if (formData.licenciaNumero.trim().length < 8) {
+      newErrors.licenciaNumero = 'El número de licencia debe tener al menos 8 caracteres'
+    }
+
+    // Validar tipo de licencia
+    if (!formData.licenciaTipo) {
+      newErrors.licenciaTipo = 'Debes seleccionar un tipo de licencia'
+    }
+
+    // Validar fecha de vencimiento
+    if (!formData.licenciaVencimiento) {
+      newErrors.licenciaVencimiento = 'La fecha de vencimiento es obligatoria'
+    } else {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const vencimiento = new Date(formData.licenciaVencimiento)
+      
+      if (vencimiento < today) {
+        newErrors.licenciaVencimiento = 'La licencia no puede estar vencida'
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validar formulario
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
+      return
+    }
+
     setIsLoading(true)
     try {
       const dataToSend = {
@@ -221,6 +290,7 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
         usuarioId: '',
         activo: true
       })
+      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving operador:', error)
@@ -256,10 +326,23 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, nombre: e.target.value })
+                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.nombre 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="Juan Pérez García"
               />
+              {errors.nombre && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.nombre}
+                </p>
+              )}
             </div>
 
             <div>
@@ -269,10 +352,24 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, telefono: e.target.value })
+                  if (errors.telefono) setErrors({ ...errors, telefono: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.telefono 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="5551234567"
+                maxLength={10}
               />
+              {errors.telefono && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.telefono}
+                </p>
+              )}
             </div>
 
             <div>
@@ -299,11 +396,24 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               </label>
               <textarea
                 value={formData.direccion}
-                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                onChange={(e) => {
+                  setFormData({ ...formData, direccion: e.target.value })
+                  if (errors.direccion) setErrors({ ...errors, direccion: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.direccion 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
                 rows={2}
-                required
+                placeholder="Calle, número, colonia, ciudad, estado"
               />
+              {errors.direccion && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.direccion}
+                </p>
+              )}
             </div>
 
             {/* Información de Licencia */}
@@ -321,10 +431,23 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="text"
                 value={formData.licenciaNumero}
-                onChange={(e) => setFormData({ ...formData, licenciaNumero: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, licenciaNumero: e.target.value })
+                  if (errors.licenciaNumero) setErrors({ ...errors, licenciaNumero: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.licenciaNumero 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
+                placeholder="12345678"
               />
+              {errors.licenciaNumero && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.licenciaNumero}
+                </p>
+              )}
             </div>
 
             <div>
@@ -333,9 +456,15 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               </label>
               <select
                 value={formData.licenciaTipo}
-                onChange={(e) => setFormData({ ...formData, licenciaTipo: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, licenciaTipo: e.target.value })
+                  if (errors.licenciaTipo) setErrors({ ...errors, licenciaTipo: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.licenciaTipo 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
               >
                 <option value="A">A - Motocicletas</option>
                 <option value="B">B - Automóviles</option>
@@ -352,10 +481,22 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="date"
                 value={formData.licenciaVencimiento}
-                onChange={(e) => setFormData({ ...formData, licenciaVencimiento: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, licenciaVencimiento: e.target.value })
+                  if (errors.licenciaVencimiento) setErrors({ ...errors, licenciaVencimiento: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.licenciaVencimiento 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                }`}
               />
+              {errors.licenciaVencimiento && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.licenciaVencimiento}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">

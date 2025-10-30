@@ -12,7 +12,8 @@ import {
   Users,
   FileText,
   Lock,
-  Award
+  Award,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { rolesService } from '@/app/services/rolesService'
@@ -134,10 +135,51 @@ const CreateRoleModal = ({ isOpen, onClose, onSave }) => {
     nombre: '',
     descripcion: ''
   })
+  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+
+  // Limpiar errores al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({})
+    }
+  }, [isOpen])
+
+  // Función de validación
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'El nombre del rol es obligatorio'
+    } else if (formData.nombre.trim().length < 3) {
+      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres'
+    } else if (formData.nombre.trim().length > 50) {
+      newErrors.nombre = 'El nombre no puede exceder 50 caracteres'
+    }
+
+    // Validar descripción
+    if (!formData.descripcion.trim()) {
+      newErrors.descripcion = 'La descripción es obligatoria'
+    } else if (formData.descripcion.trim().length < 10) {
+      newErrors.descripcion = 'La descripción debe tener al menos 10 caracteres'
+    } else if (formData.descripcion.trim().length > 500) {
+      newErrors.descripcion = 'La descripción no puede exceder 500 caracteres'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validar formulario
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
+      return
+    }
+
     setIsLoading(true)
     try {
       await onSave(formData)
@@ -145,6 +187,7 @@ const CreateRoleModal = ({ isOpen, onClose, onSave }) => {
         nombre: '',
         descripcion: ''
       })
+      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving role:', error)
@@ -172,11 +215,23 @@ const CreateRoleModal = ({ isOpen, onClose, onSave }) => {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900"
+                onChange={(e) => {
+                  setFormData({ ...formData, nombre: e.target.value })
+                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.nombre 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-indigo-500 focus:border-transparent'
+                }`}
                 placeholder="Ej: Administrador, Operador, Supervisor"
-                required
               />
+              {errors.nombre && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.nombre}
+                </p>
+              )}
             </div>
 
             <div>
@@ -185,12 +240,24 @@ const CreateRoleModal = ({ isOpen, onClose, onSave }) => {
               </label>
               <textarea
                 value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900"
+                onChange={(e) => {
+                  setFormData({ ...formData, descripcion: e.target.value })
+                  if (errors.descripcion) setErrors({ ...errors, descripcion: '' })
+                }}
+                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
+                  errors.descripcion 
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-slate-200 focus:ring-indigo-500 focus:border-transparent'
+                }`}
                 rows={4}
                 placeholder="Describe las responsabilidades y alcance de este rol"
-                required
               />
+              {errors.descripcion && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.descripcion}
+                </p>
+              )}
             </div>
           </div>
 

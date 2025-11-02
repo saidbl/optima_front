@@ -120,21 +120,40 @@ apiClient.interceptors.response.use(
 
 export const authService = {
   async login(email, password) {
+    console.log('🔵 [LOGIN] Iniciando proceso de login...')
+    console.log('📧 Email:', email)
+    console.log('🌐 API URL:', API_URL)
+    
     try {
+      console.log('🔵 [LOGIN] Enviando petición al backend...')
+      
       const response = await apiClient.post('/api/auth/login', {
         email: email,
         password: password,
       })
 
+      console.log('✅ [LOGIN] Respuesta del backend recibida')
+      console.log('📦 Response status:', response.status)
+      console.log('📦 Response data:', response.data)
+
       const data = response.data
       
       // Guardar datos en localStorage de forma segura
       if (typeof window !== 'undefined') {
+        console.log('🔵 [LOGIN] Guardando datos de autenticación...')
         this.saveAuthData(data)
+        console.log('✅ [LOGIN] Datos guardados correctamente')
       }
       
+      console.log('✅ [LOGIN] Login completado exitosamente')
       return data
     } catch (error) {
+      console.error('❌ [LOGIN] Error durante el login:')
+      console.error('📍 Error completo:', error)
+      console.error('📍 Response status:', error.response?.status)
+      console.error('📍 Response data:', error.response?.data)
+      console.error('📍 Error message:', error.message)
+      
       const message = error.response?.data?.message || 'Error al iniciar sesión'
       throw new Error(message)
     }
@@ -143,34 +162,46 @@ export const authService = {
   saveAuthData(data) {
     if (typeof window === 'undefined') return
     
+    console.log('🔵 [SAVE AUTH] Iniciando guardado de datos de autenticación...')
+    console.log('📦 Data recibida:', data)
+    
     try {
       const token = data.token
+      console.log('🔑 Token recibido:', token ? `${token.substring(0, 20)}...` : 'NO HAY TOKEN')
       
       // Decodificar el token para obtener la expiración real
       const decoded = decodeJWT(token)
+      console.log('🔓 Token decodificado:', decoded)
       
       if (!decoded || !decoded.exp) {
+        console.error('❌ [SAVE AUTH] Token inválido: no se pudo decodificar')
         throw new Error('Token inválido: no se pudo decodificar')
       }
       
       // Guardar token en localStorage
+      console.log('💾 Guardando token en localStorage...')
       localStorage.setItem('token', token)
       
       // Guardar la fecha de expiración REAL del token (en milisegundos)
       const expirationDate = new Date(decoded.exp * 1000)
+      console.log('⏰ Fecha de expiración:', expirationDate.toLocaleString())
       localStorage.setItem('tokenExpiration', expirationDate.toISOString())
       
       // Guardar token en cookies para que el middleware pueda leerlo
       const maxAge = Math.floor((decoded.exp * 1000 - Date.now()) / 1000) // Segundos restantes
+      console.log('🍪 Guardando token en cookies con maxAge:', maxAge, 'segundos')
       document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Strict; Secure`
       
       // Normalizar el rol
       let userRole = data.rol
+      console.log('👤 Rol original:', userRole)
       if (Array.isArray(userRole)) {
         userRole = userRole[0]
+        console.log('👤 Rol después de array:', userRole)
       }
       if (typeof userRole === 'string' && userRole.startsWith('ROLE_')) {
         userRole = userRole.replace('ROLE_', '')
+        console.log('👤 Rol después de limpiar ROLE_:', userRole)
       }
       
       // Guardar información del usuario
@@ -180,6 +211,7 @@ export const authService = {
         nombre: data.nombre,
         rol: userRole,
       }
+      console.log('💾 Guardando userData:', userData)
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('isAuthenticated', 'true')
       
@@ -188,10 +220,12 @@ export const authService = {
       console.log('⏰ Tiempo de vida del token:', Math.floor(maxAge / 60), 'minutos')
       
       // Configurar auto-logout cuando expire el token
+      console.log('🔵 Configurando auto-logout...')
       this.setupAutoLogout(decoded.exp * 1000)
+      console.log('✅ [SAVE AUTH] Datos guardados completamente')
       
     } catch (error) {
-      console.error('Error saving auth data:', error)
+      console.error('❌ [SAVE AUTH] Error guardando datos de autenticación:', error)
       throw error
     }
   },

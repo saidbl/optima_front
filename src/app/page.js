@@ -25,16 +25,29 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    console.log('🔵 [FORM] Formulario enviado')
+    console.log('📧 Email del formulario:', formData.email)
+    
     setIsLoading(true)
 
     try {
+      console.log('🔵 [FORM] Llamando a authService.login...')
       const data = await authService.login(formData.email, formData.password)
       
+      console.log('✅ [FORM] Login exitoso, datos recibidos:', data)
+      console.log('🔵 [FORM] Mostrando toast de bienvenida...')
       toast.success(`¡Bienvenido ${data.nombre}!`)
+      
+      console.log('🔵 [FORM] Redirigiendo a /dashboard...')
       router.push('/dashboard')
+      console.log('✅ [FORM] Proceso de login completado')
     } catch (error) {
+      console.error('❌ [FORM] Error en handleSubmit:')
+      console.error('📍 Error completo:', error)
+      console.error('📍 Error message:', error.message)
       toast.error(error.message || 'Error al iniciar sesión. Verifica tus credenciales.')
     } finally {
+      console.log('🔵 [FORM] Finalizando, setIsLoading(false)')
       setIsLoading(false)
     }
   }

@@ -15,8 +15,7 @@ import {
   Calendar,
   MapPin,
   FileText,
-  Eye,
-  AlertCircle
+  Eye
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { clientsService } from '@/app/services/clientsService'
@@ -137,91 +136,89 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
   )
 }
 
+// Función auxiliar para parsear dirección desde string a objeto
+const parseDireccion = (direccionString) => {
+  if (!direccionString) return {
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México'
+  }
+
+  const partes = direccionString.split(',').map(p => p.trim())
+  
+  return {
+    calle: partes[0] || '',
+    numeroExterior: partes[1] || '',
+    numeroInterior: partes[2] || '',
+    colonia: partes[3] || '',
+    ciudad: partes[4] || '',
+    estado: partes[5] || '',
+    codigoPostal: partes[6] || '',
+    pais: partes[7] || 'México'
+  }
+}
+
 const CreateClientModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     rfc: '',
-    direccion: '',
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México',
     telefono: '',
     correo: ''
   })
-  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-
-  // Limpiar errores al abrir el modal
-  useEffect(() => {
-    if (isOpen) {
-      setErrors({})
-    }
-  }, [isOpen])
-
-  // Función de validación
-  const validateForm = () => {
-    const newErrors = {}
-
-    // Validar nombre (no debe contener números)
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es obligatorio'
-    } else if (formData.nombre.trim().length < 3) {
-      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres'
-    } else if (/\d/.test(formData.nombre)) {
-      newErrors.nombre = 'El nombre no puede contener números'
-    }
-
-    // Validar RFC (exactamente 13 caracteres)
-    if (!formData.rfc.trim()) {
-      newErrors.rfc = 'El RFC es obligatorio'
-    } else if (formData.rfc.trim().length !== 13) {
-      newErrors.rfc = 'El RFC debe tener exactamente 13 caracteres'
-    } else if (!/^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/.test(formData.rfc.trim().toUpperCase())) {
-      newErrors.rfc = 'El formato del RFC no es válido (4 letras + 6 dígitos + 3 alfanuméricos)'
-    }
-
-    // Validar teléfono
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio'
-    } else if (!/^\d{10}$/.test(formData.telefono.replace(/\s/g, ''))) {
-      newErrors.telefono = 'El teléfono debe tener 10 dígitos'
-    }
-
-    // Validar correo (mejorada para evitar puntos antes del @)
-    if (!formData.correo.trim()) {
-      newErrors.correo = 'El correo electrónico es obligatorio'
-    } else if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.correo.trim())) {
-      newErrors.correo = 'El formato del correo no es válido (no puede empezar o terminar con punto antes del @)'
-    }
-
-    // Validar dirección
-    if (!formData.direccion.trim()) {
-      newErrors.direccion = 'La dirección es obligatoria'
-    } else if (formData.direccion.trim().length < 10) {
-      newErrors.direccion = 'La dirección debe tener al menos 10 caracteres'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Validar formulario
-    if (!validateForm()) {
-      toast.error('Por favor corrige los errores en el formulario')
-      return
-    }
-
     setIsLoading(true)
     try {
-      await onSave(formData)
+      // Concatenar dirección
+      const direccionCompleta = [
+        formData.calle,
+        formData.numeroExterior,
+        formData.numeroInterior,
+        formData.colonia,
+        formData.ciudad,
+        formData.estado,
+        formData.codigoPostal,
+        formData.pais
+      ].filter(campo => campo.trim() !== '').join(', ')
+
+      const dataToSend = {
+        nombre: formData.nombre,
+        rfc: formData.rfc,
+        direccion: direccionCompleta,
+        telefono: formData.telefono,
+        correo: formData.correo
+      }
+
+      await onSave(dataToSend)
       setFormData({
         nombre: '',
         rfc: '',
-        direccion: '',
+        calle: '',
+        numeroExterior: '',
+        numeroInterior: '',
+        colonia: '',
+        ciudad: '',
+        estado: '',
+        codigoPostal: '',
+        pais: 'México',
         telefono: '',
         correo: ''
       })
-      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving client:', error)
@@ -234,7 +231,7 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Nuevo cliente</h2>
           <p className="text-sm text-slate-600 mt-1">Completa la información del cliente</p>
@@ -242,208 +239,14 @@ const CreateClientModal = ({ isOpen, onClose, onSave }) => {
         
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información General */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nombre / Razón social *
-              </label>
-              <input
-                type="text"
-                value={formData.nombre}
-                onChange={(e) => {
-                  setFormData({ ...formData, nombre: e.target.value })
-                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.nombre 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                placeholder="Empresa S.A. de C.V."
-              />
-              {errors.nombre && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.nombre}
-                </p>
-              )}
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <Building2 className="h-4 w-4 mr-2" />
+                Información general
+              </h3>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                RFC *
-              </label>
-              <input
-                type="text"
-                value={formData.rfc}
-                onChange={(e) => {
-                  setFormData({ ...formData, rfc: e.target.value.toUpperCase() })
-                  if (errors.rfc) setErrors({ ...errors, rfc: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.rfc 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                maxLength={13}
-                placeholder="ABC123456XYZ"
-              />
-              {errors.rfc && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.rfc}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Teléfono *
-              </label>
-              <input
-                type="tel"
-                value={formData.telefono}
-                onChange={(e) => {
-                  setFormData({ ...formData, telefono: e.target.value })
-                  if (errors.telefono) setErrors({ ...errors, telefono: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.telefono 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                placeholder="5551234567"
-                maxLength={10}
-              />
-              {errors.telefono && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.telefono}
-                </p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Correo electrónico *
-              </label>
-              <input
-                type="email"
-                value={formData.correo}
-                onChange={(e) => {
-                  setFormData({ ...formData, correo: e.target.value })
-                  if (errors.correo) setErrors({ ...errors, correo: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.correo 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                placeholder="contacto@empresa.com"
-              />
-              {errors.correo && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.correo}
-                </p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Dirección *
-              </label>
-              <textarea
-                value={formData.direccion}
-                onChange={(e) => {
-                  setFormData({ ...formData, direccion: e.target.value })
-                  if (errors.direccion) setErrors({ ...errors, direccion: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.direccion 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                rows={3}
-                placeholder="Calle, número, colonia, ciudad, estado"
-              />
-              {errors.direccion && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.direccion}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 cursor-pointer py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 cursor-pointer py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Guardando...' : 'Guardar cliente'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-const EditClientModal = ({ isOpen, onClose, onSave, client }) => {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    rfc: '',
-    direccion: '',
-    telefono: '',
-    correo: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    if (client) {
-      setFormData({
-        nombre: client.nombre || '',
-        rfc: client.rfc || '',
-        direccion: client.direccion || '',
-        telefono: client.telefono || '',
-        correo: client.correo || ''
-      })
-    }
-  }, [client])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    try {
-      await onSave(client.id, formData)
-      onClose()
-    } catch (error) {
-      console.error('Error saving client:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">Editar cliente</h2>
-          <p className="text-sm text-slate-600 mt-1">Actualiza la información del cliente</p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Nombre / Razón social *
@@ -497,15 +300,383 @@ const EditClientModal = ({ isOpen, onClose, onSave, client }) => {
               />
             </div>
 
+            {/* Dirección */}
+            <div className="md:col-span-2 mt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Dirección
+              </h3>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Dirección *
+                Calle *
               </label>
-              <textarea
-                value={formData.direccion}
-                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+              <input
+                type="text"
+                value={formData.calle}
+                onChange={(e) => setFormData({ ...formData, calle: e.target.value })}
                 className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                rows={3}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Números Exterior / Interior *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={formData.numeroExterior}
+                  onChange={(e) => setFormData({ ...formData, numeroExterior: e.target.value })}
+                  placeholder="Ext.*"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+                <input
+                  type="text"
+                  value={formData.numeroInterior}
+                  onChange={(e) => setFormData({ ...formData, numeroInterior: e.target.value })}
+                  placeholder="Int."
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Colonia *
+              </label>
+              <input
+                type="text"
+                value={formData.colonia}
+                onChange={(e) => setFormData({ ...formData, colonia: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Ciudad *
+              </label>
+              <input
+                type="text"
+                value={formData.ciudad}
+                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Estado *
+              </label>
+              <input
+                type="text"
+                value={formData.estado}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Código Postal *
+              </label>
+              <input
+                type="text"
+                value={formData.codigoPostal}
+                onChange={(e) => setFormData({ ...formData, codigoPostal: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+                maxLength={5}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                País *
+              </label>
+              <input
+                type="text"
+                value={formData.pais}
+                onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 cursor-pointer py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 cursor-pointer py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Guardando...' : 'Guardar cliente'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+const EditClientModal = ({ isOpen, onClose, onSave, client }) => {
+  const [formData, setFormData] = useState({
+    nombre: '',
+    rfc: '',
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México',
+    telefono: '',
+    correo: ''
+  })
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (client) {
+      const direccionParsed = parseDireccion(client.direccion)
+      setFormData({
+        nombre: client.nombre || '',
+        rfc: client.rfc || '',
+        ...direccionParsed,
+        telefono: client.telefono || '',
+        correo: client.correo || ''
+      })
+    }
+  }, [client])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      // Concatenar dirección
+      const direccionCompleta = [
+        formData.calle,
+        formData.numeroExterior,
+        formData.numeroInterior,
+        formData.colonia,
+        formData.ciudad,
+        formData.estado,
+        formData.codigoPostal,
+        formData.pais
+      ].filter(campo => campo.trim() !== '').join(', ')
+
+      const dataToSend = {
+        nombre: formData.nombre,
+        rfc: formData.rfc,
+        direccion: direccionCompleta,
+        telefono: formData.telefono,
+        correo: formData.correo
+      }
+
+      await onSave(client.id, dataToSend)
+      onClose()
+    } catch (error) {
+      console.error('Error saving client:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-200">
+          <h2 className="text-2xl font-bold text-slate-900">Editar cliente</h2>
+          <p className="text-sm text-slate-600 mt-1">Actualiza la información del cliente</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información General */}
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <Building2 className="h-4 w-4 mr-2" />
+                Información general
+              </h3>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Nombre / Razón social *
+              </label>
+              <input
+                type="text"
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                RFC *
+              </label>
+              <input
+                type="text"
+                value={formData.rfc}
+                onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+                maxLength={13}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Teléfono *
+              </label>
+              <input
+                type="tel"
+                value={formData.telefono}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Correo electrónico *
+              </label>
+              <input
+                type="email"
+                value={formData.correo}
+                onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            {/* Dirección */}
+            <div className="md:col-span-2 mt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Dirección
+              </h3>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Calle *
+              </label>
+              <input
+                type="text"
+                value={formData.calle}
+                onChange={(e) => setFormData({ ...formData, calle: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Número Exterior *
+              </label>
+              <input
+                type="text"
+                value={formData.numeroExterior}
+                onChange={(e) => setFormData({ ...formData, numeroExterior: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Número Interior
+              </label>
+              <input
+                type="text"
+                value={formData.numeroInterior}
+                onChange={(e) => setFormData({ ...formData, numeroInterior: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Colonia *
+              </label>
+              <input
+                type="text"
+                value={formData.colonia}
+                onChange={(e) => setFormData({ ...formData, colonia: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Ciudad *
+              </label>
+              <input
+                type="text"
+                value={formData.ciudad}
+                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Estado *
+              </label>
+              <input
+                type="text"
+                value={formData.estado}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Código Postal *
+              </label>
+              <input
+                type="text"
+                value={formData.codigoPostal}
+                onChange={(e) => setFormData({ ...formData, codigoPostal: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+                maxLength={5}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                País *
+              </label>
+              <input
+                type="text"
+                value={formData.pais}
+                onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
                 required
               />
             </div>
@@ -535,6 +706,8 @@ const EditClientModal = ({ isOpen, onClose, onSave, client }) => {
 
 const ViewClientModal = ({ isOpen, onClose, client }) => {
   if (!isOpen || !client) return null
+
+  const direccionParsed = parseDireccion(client.direccion)
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -594,9 +767,41 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
               <MapPin className="h-4 w-4 mr-2" />
               Ubicación
             </h3>
-            <div>
-              <label className="text-xs font-medium text-slate-500">Dirección</label>
-              <p className="text-sm text-slate-900 mt-1">{client.direccion}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-slate-500">Calle</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.calle}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Número Exterior</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroExterior}</p>
+              </div>
+              {direccionParsed.numeroInterior && (
+                <div>
+                  <label className="text-xs font-medium text-slate-500">Número Interior</label>
+                  <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroInterior}</p>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-medium text-slate-500">Colonia</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.colonia}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Ciudad</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.ciudad}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Estado</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.estado}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Código Postal</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.codigoPostal}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">País</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.pais}</p>
+              </div>
             </div>
           </div>
 
@@ -664,6 +869,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, clientName }) => {
     </div>
   )
 }
+
 const ClientesPage = () => {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -916,4 +1122,5 @@ const ClientesPage = () => {
     </div>
   )
 }
+
 export default ClientesPage;

@@ -189,114 +189,98 @@ const OperadorCard = ({ operador, onEdit, onDelete, onViewDetails }) => {
   )
 }
 
+// Función auxiliar para parsear dirección desde string a objeto
+const parseDireccion = (direccionString) => {
+  if (!direccionString) return {
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México'
+  }
+
+  const partes = direccionString.split(',').map(p => p.trim())
+  
+  return {
+    calle: partes[0] || '',
+    numeroExterior: partes[1] || '',
+    numeroInterior: partes[2] || '',
+    colonia: partes[3] || '',
+    ciudad: partes[4] || '',
+    estado: partes[5] || '',
+    codigoPostal: partes[6] || '',
+    pais: partes[7] || 'México'
+  }
+}
+
 const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     telefono: '',
-    direccion: '',
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México',
     licenciaNumero: '',
     licenciaTipo: 'A',
     licenciaVencimiento: '',
     usuarioId: '',
     activo: true
   })
-  const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-
-  // Limpiar errores al abrir el modal
-  useEffect(() => {
-    if (isOpen) {
-      setErrors({})
-    }
-  }, [isOpen])
-
-  // Función de validación
-  const validateForm = () => {
-    const newErrors = {}
-
-    // Validar nombre (mínimo 3 caracteres, no números)
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es obligatorio'
-    } else if (formData.nombre.trim().length < 3) {
-      newErrors.nombre = 'El nombre debe tener al menos 3 caracteres'
-    } else if (/\d/.test(formData.nombre)) {
-      newErrors.nombre = 'El nombre no puede contener números'
-    }
-
-    // Validar teléfono (exactamente 10 dígitos)
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio'
-    } else if (!/^\d{10}$/.test(formData.telefono.replace(/\s/g, ''))) {
-      newErrors.telefono = 'El teléfono debe tener exactamente 10 dígitos'
-    }
-
-    // Validar dirección
-    if (!formData.direccion.trim()) {
-      newErrors.direccion = 'La dirección es obligatoria'
-    } else if (formData.direccion.trim().length < 10) {
-      newErrors.direccion = 'La dirección debe tener al menos 10 caracteres'
-    }
-
-    // Validar número de licencia (formato típico mexicano: 8-16 caracteres alfanuméricos)
-    if (!formData.licenciaNumero.trim()) {
-      newErrors.licenciaNumero = 'El número de licencia es obligatorio'
-    } else if (formData.licenciaNumero.trim().length < 8) {
-      newErrors.licenciaNumero = 'El número de licencia debe tener al menos 8 caracteres'
-    } else if (formData.licenciaNumero.trim().length > 16) {
-      newErrors.licenciaNumero = 'El número de licencia no puede tener más de 16 caracteres'
-    } else if (!/^[A-Z0-9]+$/.test(formData.licenciaNumero.trim())) {
-      newErrors.licenciaNumero = 'El número de licencia solo puede contener letras mayúsculas y números'
-    }
-
-    // Validar tipo de licencia
-    if (!formData.licenciaTipo) {
-      newErrors.licenciaTipo = 'Debes seleccionar un tipo de licencia'
-    }
-
-    // Validar fecha de vencimiento
-    if (!formData.licenciaVencimiento) {
-      newErrors.licenciaVencimiento = 'La fecha de vencimiento es obligatoria'
-    } else {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const vencimiento = new Date(formData.licenciaVencimiento)
-      
-      if (vencimiento < today) {
-        newErrors.licenciaVencimiento = 'La licencia no puede estar vencida'
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Validar formulario
-    if (!validateForm()) {
-      toast.error('Por favor corrige los errores en el formulario')
-      return
-    }
-
     setIsLoading(true)
     try {
+      // Concatenar dirección
+      const direccionCompleta = [
+        formData.calle,
+        formData.numeroExterior,
+        formData.numeroInterior,
+        formData.colonia,
+        formData.ciudad,
+        formData.estado,
+        formData.codigoPostal,
+        formData.pais
+      ].filter(campo => campo.trim() !== '').join(', ')
+
       const dataToSend = {
-        ...formData,
-        usuarioId: formData.usuarioId ? parseInt(formData.usuarioId) : null
+        nombre: formData.nombre,
+        telefono: formData.telefono,
+        direccion: direccionCompleta,
+        licenciaNumero: formData.licenciaNumero,
+        licenciaTipo: formData.licenciaTipo,
+        licenciaVencimiento: formData.licenciaVencimiento,
+        usuarioId: formData.usuarioId ? parseInt(formData.usuarioId) : null,
+        activo: formData.activo
       }
+
       await onSave(dataToSend)
       setFormData({
         nombre: '',
         telefono: '',
-        direccion: '',
+        calle: '',
+        numeroExterior: '',
+        numeroInterior: '',
+        colonia: '',
+        ciudad: '',
+        estado: '',
+        codigoPostal: '',
+        pais: 'México',
         licenciaNumero: '',
         licenciaTipo: 'A',
         licenciaVencimiento: '',
         usuarioId: '',
         activo: true
       })
-      setErrors({})
       onClose()
     } catch (error) {
       console.error('Error saving operador:', error)
@@ -332,23 +316,10 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="text"
                 value={formData.nombre}
-                onChange={(e) => {
-                  setFormData({ ...formData, nombre: e.target.value })
-                  if (errors.nombre) setErrors({ ...errors, nombre: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.nombre 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                placeholder="Juan Pérez García"
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               />
-              {errors.nombre && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.nombre}
-                </p>
-              )}
             </div>
 
             <div>
@@ -358,24 +329,10 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="tel"
                 value={formData.telefono}
-                onChange={(e) => {
-                  setFormData({ ...formData, telefono: e.target.value })
-                  if (errors.telefono) setErrors({ ...errors, telefono: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.telefono 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                placeholder="5551234567"
-                maxLength={10}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               />
-              {errors.telefono && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.telefono}
-                </p>
-              )}
             </div>
 
             <div>
@@ -396,30 +353,114 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               </select>
             </div>
 
+            {/* Dirección */}
+            <div className="md:col-span-2 mt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Dirección
+              </h3>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Dirección *
+                Calle *
               </label>
-              <textarea
-                value={formData.direccion}
-                onChange={(e) => {
-                  setFormData({ ...formData, direccion: e.target.value })
-                  if (errors.direccion) setErrors({ ...errors, direccion: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.direccion 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                rows={2}
-                placeholder="Calle, número, colonia, ciudad, estado"
+              <input
+                type="text"
+                value={formData.calle}
+                onChange={(e) => setFormData({ ...formData, calle: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               />
-              {errors.direccion && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.direccion}
-                </p>
-              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Números Exterior / Interior *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={formData.numeroExterior}
+                  onChange={(e) => setFormData({ ...formData, numeroExterior: e.target.value })}
+                  placeholder="Ext.*"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+                <input
+                  type="text"
+                  value={formData.numeroInterior}
+                  onChange={(e) => setFormData({ ...formData, numeroInterior: e.target.value })}
+                  placeholder="Int."
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Colonia *
+              </label>
+              <input
+                type="text"
+                value={formData.colonia}
+                onChange={(e) => setFormData({ ...formData, colonia: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Ciudad *
+              </label>
+              <input
+                type="text"
+                value={formData.ciudad}
+                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Estado *
+              </label>
+              <input
+                type="text"
+                value={formData.estado}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Código Postal *
+              </label>
+              <input
+                type="text"
+                value={formData.codigoPostal}
+                onChange={(e) => setFormData({ ...formData, codigoPostal: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+                maxLength={5}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                País *
+              </label>
+              <input
+                type="text"
+                value={formData.pais}
+                onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
             </div>
 
             {/* Información de Licencia */}
@@ -437,25 +478,10 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="text"
                 value={formData.licenciaNumero}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-                  setFormData({ ...formData, licenciaNumero: value })
-                  if (errors.licenciaNumero) setErrors({ ...errors, licenciaNumero: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.licenciaNumero 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
-                maxLength={16}
-                placeholder="ABC123456789"
+                onChange={(e) => setFormData({ ...formData, licenciaNumero: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               />
-              {errors.licenciaNumero && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.licenciaNumero}
-                </p>
-              )}
             </div>
 
             <div>
@@ -464,15 +490,9 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               </label>
               <select
                 value={formData.licenciaTipo}
-                onChange={(e) => {
-                  setFormData({ ...formData, licenciaTipo: e.target.value })
-                  if (errors.licenciaTipo) setErrors({ ...errors, licenciaTipo: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.licenciaTipo 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
+                onChange={(e) => setFormData({ ...formData, licenciaTipo: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               >
                 <option value="A">A - Motocicletas</option>
                 <option value="B">B - Automóviles</option>
@@ -489,22 +509,10 @@ const CreateOperadorModal = ({ isOpen, onClose, onSave, users }) => {
               <input
                 type="date"
                 value={formData.licenciaVencimiento}
-                onChange={(e) => {
-                  setFormData({ ...formData, licenciaVencimiento: e.target.value })
-                  if (errors.licenciaVencimiento) setErrors({ ...errors, licenciaVencimiento: '' })
-                }}
-                className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                  errors.licenciaVencimiento 
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                }`}
+                onChange={(e) => setFormData({ ...formData, licenciaVencimiento: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
               />
-              {errors.licenciaVencimiento && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.licenciaVencimiento}
-                </p>
-              )}
             </div>
 
             <div className="md:col-span-2">
@@ -546,7 +554,14 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     telefono: '',
-    direccion: '',
+    calle: '',
+    numeroExterior: '',
+    numeroInterior: '',
+    colonia: '',
+    ciudad: '',
+    estado: '',
+    codigoPostal: '',
+    pais: 'México',
     licenciaNumero: '',
     licenciaTipo: 'A',
     licenciaVencimiento: '',
@@ -557,10 +572,11 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
 
   useEffect(() => {
     if (operador) {
+      const direccionParsed = parseDireccion(operador.direccion)
       setFormData({
         nombre: operador.nombre || '',
         telefono: operador.telefono || '',
-        direccion: operador.direccion || '',
+        ...direccionParsed,
         licenciaNumero: operador.licenciaNumero || '',
         licenciaTipo: operador.licenciaTipo || 'A',
         licenciaVencimiento: operador.licenciaVencimiento || '',
@@ -574,10 +590,29 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
     e.preventDefault()
     setIsLoading(true)
     try {
+      // Concatenar dirección
+      const direccionCompleta = [
+        formData.calle,
+        formData.numeroExterior,
+        formData.numeroInterior,
+        formData.colonia,
+        formData.ciudad,
+        formData.estado,
+        formData.codigoPostal,
+        formData.pais
+      ].filter(campo => campo.trim() !== '').join(', ')
+
       const dataToSend = {
-        ...formData,
-        usuarioId: formData.usuarioId ? parseInt(formData.usuarioId) : null
+        nombre: formData.nombre,
+        telefono: formData.telefono,
+        direccion: direccionCompleta,
+        licenciaNumero: formData.licenciaNumero,
+        licenciaTipo: formData.licenciaTipo,
+        licenciaVencimiento: formData.licenciaVencimiento,
+        usuarioId: formData.usuarioId ? parseInt(formData.usuarioId) : null,
+        activo: formData.activo
       }
+
       await onSave(operador.id, dataToSend)
       onClose()
     } catch (error) {
@@ -651,15 +686,112 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
               </select>
             </div>
 
+            {/* Dirección */}
+            <div className="md:col-span-2 mt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Dirección
+              </h3>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Dirección *
+                Calle *
               </label>
-              <textarea
-                value={formData.direccion}
-                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+              <input
+                type="text"
+                value={formData.calle}
+                onChange={(e) => setFormData({ ...formData, calle: e.target.value })}
                 className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                rows={2}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Números Exterior / Interior *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={formData.numeroExterior}
+                  onChange={(e) => setFormData({ ...formData, numeroExterior: e.target.value })}
+                  placeholder="Ext.*"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                />
+                <input
+                  type="text"
+                  value={formData.numeroInterior}
+                  onChange={(e) => setFormData({ ...formData, numeroInterior: e.target.value })}
+                  placeholder="Int."
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Colonia *
+              </label>
+              <input
+                type="text"
+                value={formData.colonia}
+                onChange={(e) => setFormData({ ...formData, colonia: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Ciudad *
+              </label>
+              <input
+                type="text"
+                value={formData.ciudad}
+                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Estado *
+              </label>
+              <input
+                type="text"
+                value={formData.estado}
+                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Código Postal *
+              </label>
+              <input
+                type="text"
+                value={formData.codigoPostal}
+                onChange={(e) => setFormData({ ...formData, codigoPostal: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                required
+                maxLength={5}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                País *
+              </label>
+              <input
+                type="text"
+                value={formData.pais}
+                onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
                 required
               />
             </div>
@@ -679,12 +811,8 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
               <input
                 type="text"
                 value={formData.licenciaNumero}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-                  setFormData({ ...formData, licenciaNumero: value })
-                }}
+                onChange={(e) => setFormData({ ...formData, licenciaNumero: e.target.value })}
                 className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                maxLength={16}
                 required
               />
             </div>
@@ -758,6 +886,8 @@ const EditOperadorModal = ({ isOpen, onClose, onSave, operador, users }) => {
 const ViewOperadorModal = ({ isOpen, onClose, operador }) => {
   if (!isOpen || !operador) return null
 
+  const direccionParsed = parseDireccion(operador.direccion)
+
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full">
@@ -793,9 +923,49 @@ const ViewOperadorModal = ({ isOpen, onClose, operador }) => {
                 <label className="text-xs font-medium text-slate-500">Teléfono</label>
                 <p className="text-sm text-slate-900 mt-1">{operador.telefono}</p>
               </div>
-              <div className="col-span-2">
-                <label className="text-xs font-medium text-slate-500">Dirección</label>
-                <p className="text-sm text-slate-900 mt-1">{operador.direccion}</p>
+            </div>
+          </div>
+
+          {/* Dirección */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center">
+              <MapPin className="h-4 w-4 mr-2" />
+              Ubicación
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-slate-500">Calle</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.calle}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Número Exterior</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroExterior}</p>
+              </div>
+              {direccionParsed.numeroInterior && (
+                <div>
+                  <label className="text-xs font-medium text-slate-500">Número Interior</label>
+                  <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroInterior}</p>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-medium text-slate-500">Colonia</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.colonia}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Ciudad</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.ciudad}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Estado</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.estado}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Código Postal</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.codigoPostal}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">País</label>
+                <p className="text-sm text-slate-900 mt-1">{direccionParsed.pais}</p>
               </div>
             </div>
           </div>

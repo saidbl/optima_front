@@ -62,17 +62,15 @@ const menuItems = [
         title: 'Bitácora',
         icon: FileText,
         children: [
-            { title: 'Bitácora de viaje detallada', href: '/dashboard/carta-portes' },
             { title: 'Bitácora de viaje', href: '/dashboard/bitacora' },
-            { title: 'Bitácora contable', href: '/dashboard/compliance' },
         ]
     },
     {
         title: 'Nómina',
         icon: Coins,
         children: [
-            { title: 'Pagos', href: '/dashboard/pagoss' },
-            { title: 'Operadores', href: '/dashboard/operadores' }
+            { title: 'Nómina operativa', href: '/dashboard/pagoss' },
+            { title: 'Nómina fija', href: '/dashboard/pagoss' }
         ]
     },
     {
@@ -86,7 +84,7 @@ const menuItems = [
         title: 'Ruta de viaje',
         icon: Truck,
         children: [
-            { title: 'Visualización de gps', href: '/dashboard/insurance' },
+            { title: 'Monlo', href: '/dashboard/monlo' },
             { title: 'Viajes', href: '/dashboard/viajes' }
         ]
     },
@@ -106,18 +104,33 @@ const menuItems = [
         icon: CoinsIcon,
         children: [
             { title: 'Factura de viaje', href: '/dashboard/insurance' },
-            { title: 'Factura de cliente', href: '/dashboard/licenses' },
-            { title: 'Factura de pagos', href: '/dashboard/maintenance' },
-            { title: 'Factura de costos extra', href: '/dashboard/vehicles' },
+            { title: 'Factura extra', href: '/dashboard/licenses' },
+            { title: 'Facturaciones', href: '/dashboard/maintenance' }
+        ]
+    },
+    {
+        title: 'Gastos',
+        icon: CoinsIcon,
+        children: [
+            { title: 'Gastos operativos', href: '/dashboard/insurance' },
+            { title: 'Gastos administrativos', href: '/dashboard/licenses' },
+
+        ]
+    },
+    {
+        title: 'Tarifas',
+        icon: CoinsIcon,
+        children: [
+            { title: 'Tarifa cliente', href: '/dashboard/insurance' },
+            { title: 'Tarifa operador', href: '/dashboard/licenses' }
         ]
     },
     {
         title: 'Almacén',
         icon: Building2,
         children: [
-            { title: 'Opción 1', href: '/dashboard/insurance' },
-            { title: 'Opción 2', href: '/dashboard/licenses' },
-            { title: 'Opción 3', href: '/dashboard/maintenance' }
+            { title: 'Mantenimiento', href: '/dashboard/insurance' },
+            { title: 'Registro', href: '/dashboard/licenses' },
 
         ]
     },
@@ -126,15 +139,15 @@ const menuItems = [
         icon: Users2,
         href: '/dashboard/clientes',
     },
+        {
+        title: 'Operadores',
+        icon: Users2,
+        href: '/dashboard/operadores',
+    },
     {
         title: 'Usuarios',
         icon: Users,
         href: '/dashboard/usuarios',
-    },
-    {
-        title: 'Monlo',
-        icon: Globe,
-        href: '/dashboard/monlo',
     },
     {
         title: 'Gráficos',
@@ -265,8 +278,8 @@ export function Sidebar({ isOpen, onClose }) {
                                         <button
                                             onClick={() => toggleExpanded(item.title)}
                                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 group ${hasActiveChild(item.children)
-                                                    ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100'
-                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                                ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
                                                 }`}
                                         >
                                             <div className="flex items-center">
@@ -283,8 +296,8 @@ export function Sidebar({ isOpen, onClose }) {
                                                 href={item.href}
                                                 onClick={handleLinkClick}
                                                 className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive(item.href)
-                                                        ? 'bg-blue-100 text-blue-700 shadow-md'
-                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                                                    ? 'bg-blue-100 text-blue-700 shadow-md'
+                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
                                                     }`}
                                             >
                                                 <Icon className="h-4 w-4 mr-3 transition-colors" />
@@ -312,8 +325,8 @@ export function Sidebar({ isOpen, onClose }) {
                                                         href={child.href}
                                                         onClick={handleLinkClick}
                                                         className={`block px-3 py-2 rounded-md text-sm transition-all duration-200 ${isActive(child.href)
-                                                                ? 'bg-blue-100 text-blue-700 font-medium '
-                                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                                            ? 'bg-blue-100 text-blue-700 font-medium '
+                                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                                                             }`}
                                                     >
                                                         {child.title}

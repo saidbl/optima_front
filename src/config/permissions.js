@@ -50,7 +50,7 @@ export const PERMISSIONS = {
 
   [ROLES.ALMACEN]: {
     allowedRoutes: [
-      '/dashboard',
+      '/dashboard/graficos',
       '/dashboard/almacen',
     ],
     displayName: 'Almacen'
@@ -58,8 +58,9 @@ export const PERMISSIONS = {
 
   [ROLES.NOMINA]: {
     allowedRoutes: [
-      '/dashboard',
+      '/dashboard/graficos',
       '/dashboard/operador',
+      '/dashboard/nomina',
     ],
     displayName: 'Nomina'
   },

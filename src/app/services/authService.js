@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 // Configuración de la URL del backend
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://transportes-backend-formyke.fly.dev'
-const API_URL = 'http://localhost:8080' // URL local para desarrollo
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://transportes-backend-formyke.fly.dev'
+// const API_URL = 'http://localhost:8080' // URL local para desarrollo
 // const API_URL = 'https://transportes-backend.fly.dev'
 
 // Función para decodificar el JWT y obtener la expiración real

@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 // Configuración de la URL del backend
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://transportes-backend-formyke.fly.dev'
-// const API_URL = 'http://localhost:8080' // URL local para desarrollo
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://transportes-backend-formyke.fly.dev'
+const API_URL = 'http://localhost:8080' // URL local para desarrollo
 // const API_URL = 'https://transportes-backend.fly.dev'
 
 // Función para decodificar el JWT y obtener la expiración real
@@ -98,11 +98,12 @@ apiClient.interceptors.response.use(
     // Los uploads pueden fallar por tamaño, timeout, etc. sin ser problemas de autenticación
     const isFileUpload = config?.headers?.['Content-Type']?.includes('multipart/form-data')
     
-    // Si es un error 401 o 403
-    if (response?.status === 401 || response?.status === 403) {
+    // Solo cerrar sesión en errores 401 (no autenticado)
+    // NO cerrar sesión en 403 (sin permisos) - eso es un problema de autorización, no de autenticación
+    if (response?.status === 401) {
       // Si NO es un upload de archivo, hacer logout (es un problema real de autenticación)
       if (!isFileUpload) {
-        console.warn('🔒 Sesión expirada o sin autorización. Redirigiendo a login...')
+        console.warn('🔒 Sesión expirada. Redirigiendo a login...')
         authService.logout()
         window.location.href = '/'
       } else {
@@ -113,6 +114,10 @@ apiClient.interceptors.response.use(
           error: response.data
         })
       }
+    } else if (response?.status === 403) {
+      // 403 = Forbidden - el usuario está autenticado pero no tiene permisos
+      console.error('❌ Sin permisos para acceder a:', config.url)
+      console.error('Necesitas los permisos adecuados para esta operación')
     }
     
     return Promise.reject(error)

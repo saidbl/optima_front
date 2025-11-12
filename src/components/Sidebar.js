@@ -41,6 +41,7 @@ const availablePages = [
     '/dashboard/graficos',
     '/dashboard/almacen',
     '/dashboard/refacciones',
+    '/dashboard/facturas',
 ]
 
 const menuItems = [
@@ -96,7 +97,7 @@ const menuItems = [
         children: [
             { title: 'Factura de viaje', href: '/dashboard/insurance' },
             { title: 'Factura extra', href: '/dashboard/licenses' },
-            { title: 'Facturaciones', href: '/dashboard/maintenance' }
+            { title: 'Facturaciones', href: '/dashboard/facturas' }
         ]
     },
     {

@@ -389,7 +389,11 @@ const ViajesPage = () => {
       }
 
       const viajesData = response.content || []
-      setViajes(viajesData)
+      
+      // Ordenar los viajes por ID de forma ascendente (1, 2, 3, 4...)
+      const viajesOrdenados = [...viajesData].sort((a, b) => a.id - b.id)
+      
+      setViajes(viajesOrdenados)
 
       // Calcular estadísticas
       const pendientes = viajesData.filter(v => v.estado === 'PENDIENTE').length

@@ -168,7 +168,11 @@ export default function GraficosPage() {
     bitacoras.forEach(bitacora => {
       if (bitacora.fechaCarga || bitacora.fechaHoraInicio) {
         const fecha = new Date(bitacora.fechaCarga || bitacora.fechaHoraInicio)
-        const mes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
+        // Crear clave con formato YYYY-MM para ordenar correctamente
+        const anio = fecha.getFullYear()
+        const mes = fecha.getMonth()
+        const clave = `${anio}-${String(mes + 1).padStart(2, '0')}`
+        const nombreMes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
         
         // Sumar los gastos desglosados (no usar costoTotal)
         const gastoTotal = (
@@ -178,13 +182,18 @@ export default function GraficosPage() {
           parseFloat(bitacora.comisionOperador || 0)
         )
         
-        meses[mes] = (meses[mes] || 0) + gastoTotal
+        if (!meses[clave]) {
+          meses[clave] = { mes: nombreMes, total: 0, orden: fecha.getTime() }
+        }
+        meses[clave].total += gastoTotal
       }
     })
     
-    return Object.entries(meses)
-      .map(([mes, total]) => ({ mes, total: Math.round(total) }))
+    // Ordenar por fecha y tomar los últimos 6 meses
+    return Object.values(meses)
+      .sort((a, b) => a.orden - b.orden)
       .slice(-6)
+      .map(({ mes, total }) => ({ mes, total: Math.round(total) }))
   }
 
   const getGastosPorCategoria = () => {
@@ -221,9 +230,14 @@ export default function GraficosPage() {
       viajes.forEach(viaje => {
         if (viaje.fechaSalida && viaje.tarifa) {
           const fecha = new Date(viaje.fechaSalida)
-          const mes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
-          if (!meses[mes]) meses[mes] = { mes, ingresos: 0, gastos: 0 }
-          meses[mes].ingresos += parseFloat(viaje.tarifa)
+          // Crear clave con formato YYYY-MM para ordenar correctamente
+          const anio = fecha.getFullYear()
+          const mes = fecha.getMonth()
+          const clave = `${anio}-${String(mes + 1).padStart(2, '0')}`
+          const nombreMes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
+          
+          if (!meses[clave]) meses[clave] = { mes: nombreMes, ingresos: 0, gastos: 0, orden: fecha.getTime() }
+          meses[clave].ingresos += parseFloat(viaje.tarifa)
         }
       })
     }
@@ -233,8 +247,13 @@ export default function GraficosPage() {
       bitacoras.forEach(bitacora => {
         if (bitacora.fechaCarga || bitacora.fechaHoraInicio) {
           const fecha = new Date(bitacora.fechaCarga || bitacora.fechaHoraInicio)
-          const mes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
-          if (!meses[mes]) meses[mes] = { mes, ingresos: 0, gastos: 0 }
+          // Crear clave con formato YYYY-MM para ordenar correctamente
+          const anio = fecha.getFullYear()
+          const mes = fecha.getMonth()
+          const clave = `${anio}-${String(mes + 1).padStart(2, '0')}`
+          const nombreMes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
+          
+          if (!meses[clave]) meses[clave] = { mes: nombreMes, ingresos: 0, gastos: 0, orden: fecha.getTime() }
           
           // Sumar los gastos desglosados (no usar costoTotal)
           const gastoTotal = (
@@ -243,19 +262,21 @@ export default function GraficosPage() {
             parseFloat(bitacora.gastosExtras || 0) +
             parseFloat(bitacora.comisionOperador || 0)
           )
-          meses[mes].gastos += gastoTotal
+          meses[clave].gastos += gastoTotal
         }
       })
     }
 
+    // Ordenar por fecha y tomar los últimos 6 meses
     return Object.values(meses)
+      .sort((a, b) => a.orden - b.orden)
+      .slice(-6)
       .map(item => ({
-        ...item,
+        mes: item.mes,
         ingresos: Math.round(item.ingresos),
         gastos: Math.round(item.gastos),
         utilidad: Math.round(item.ingresos - item.gastos)
       }))
-      .slice(-6)
   }
 
   // Procesar datos para gráficos de unidades

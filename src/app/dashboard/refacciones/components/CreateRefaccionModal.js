@@ -27,7 +27,7 @@ const CreateRefaccionModal = ({ isOpen, onClose, onSave, almacenes }) => {
         stockActual: parseInt(formData.stockActual),
         almacenId: parseInt(formData.almacenId)
       }
-      
+
       await onSave(dataToSend)
       setFormData({
         nombre: '',
@@ -108,6 +108,8 @@ const CreateRefaccionModal = ({ isOpen, onClose, onSave, almacenes }) => {
                     <option value="caja">Caja</option>
                     <option value="metro">Metro</option>
                     <option value="paquete">Paquete</option>
+                    <option value="cubeta">Cubeta</option>
+                    <option value="barril">Barril</option>
                   </select>
                 </div>
               </div>

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Truck, 
-  Users, 
-  FileText, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Truck,
+  Users,
+  FileText,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Clock,
   CheckCircle,
@@ -37,9 +37,8 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color, descrip
           <p className="text-xs text-slate-500 mb-2">{description}</p>
         )}
         {change && (
-          <div className={`flex items-center ${
-            changeType === 'positive' ? 'text-emerald-600' : 'text-red-600'
-          }`}>
+          <div className={`flex items-center ${changeType === 'positive' ? 'text-emerald-600' : 'text-red-600'
+            }`}>
             {changeType === 'positive' ? (
               <TrendingUp className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
             ) : (
@@ -56,7 +55,7 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color, descrip
 
 const RecentTrips = ({ trips }) => {
   const getStatusConfig = (status) => {
-    switch(status) {
+    switch (status) {
       case 'COMPLETADO':
         return { color: 'bg-emerald-500', label: 'Completado' }
       case 'EN_CURSO':
@@ -130,10 +129,9 @@ const TasksWidget = ({ tasks }) => (
         <div className="space-y-2 lg:space-y-3">
           {tasks.map((task) => (
             <div key={task.id} className="flex items-start space-x-2 lg:space-x-3 p-2.5 lg:p-3 rounded-lg hover:bg-slate-50 transition-colors">
-              <div className={`w-2 h-2 rounded-full mt-1.5 lg:mt-2 shrink-0 ${
-                task.priority === 'high' ? 'bg-red-500' :
-                task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-              }`}></div>
+              <div className={`w-2 h-2 rounded-full mt-1.5 lg:mt-2 shrink-0 ${task.priority === 'high' ? 'bg-red-500' :
+                  task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}></div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs lg:text-sm font-medium text-slate-900">{task.title}</p>
                 <p className="text-xs text-slate-600 mt-1">{task.description}</p>
@@ -159,28 +157,28 @@ const QuickActions = () => {
       </div>
       <div className="p-4 lg:p-6">
         <div className="grid grid-cols-2 gap-3 lg:gap-4">
-          <button 
+          <button
             onClick={() => router.push('/dashboard/viajes')}
             className="p-3 lg:p-4 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-center"
           >
             <Truck className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
             <span className="text-xs lg:text-sm font-medium">Nuevo viaje</span>
           </button>
-          <button 
+          <button
             onClick={() => router.push('/dashboard/bitacora')}
             className="p-3 lg:p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-center"
           >
             <FileText className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
             <span className="text-xs lg:text-sm font-medium">Bitácora</span>
           </button>
-          <button 
+          <button
             onClick={() => router.push('/dashboard/clientes')}
             className="p-3 lg:p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
           >
             <Users className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
             <span className="text-xs lg:text-sm font-medium">Nuevo cliente</span>
           </button>
-          <button 
+          <button
             onClick={() => router.push('/dashboard/graficos')}
             className="p-3 lg:p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
           >
@@ -200,6 +198,7 @@ const Dashboard = () => {
     activeTrips: 0,
     completedTrips: 0,
     pendingTrips: 0,
+    cancelledTrips: 0,
     totalClients: 0,
     monthlyRevenue: 0,
     monthlyExpenses: 0,
@@ -219,19 +218,19 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      
+
       // Cargar viajes
       const viajesResponse = await viajesService.getViajes(0, 100)
       const viajes = viajesResponse.content || viajesResponse || []
-      
+
       // Cargar clientes
       const clientesResponse = await clientsService.getClients()
       const clientes = clientesResponse.content || clientesResponse || []
-      
+
       // Cargar unidades
       const unidadesResponse = await unidadesService.getAll()
       const unidades = unidadesResponse.content || unidadesResponse || []
-      
+
       // Cargar bitácoras para calcular ingresos
       let bitacoras = []
       try {
@@ -245,23 +244,24 @@ const Dashboard = () => {
       const viajesActivos = viajes.filter(v => v.estado === 'EN_CURSO').length
       const viajesCompletados = viajes.filter(v => v.estado === 'COMPLETADO').length
       const viajesPendientes = viajes.filter(v => v.estado === 'PENDIENTE').length
+      const viajesCancelados = viajes.filter(v => v.estado === 'CANCELADO').length
 
       // Calcular ingresos y gastos del mes actual
       const currentMonth = new Date().getMonth()
       const currentYear = new Date().getFullYear()
-      
+
       // Filtrar bitácoras del mes actual
       const bitacorasDelMes = bitacoras.filter(b => {
         if (!b.fechaCarga && !b.fechaHoraInicio) return false
         const fecha = new Date(b.fechaCarga || b.fechaHoraInicio)
         return fecha.getMonth() === currentMonth && fecha.getFullYear() === currentYear
       })
-      
+
       // Calcular ingresos brutos del mes (costoTotal de bitácoras)
-      const ingresosBrutosMes = bitacorasDelMes.reduce((sum, b) => 
+      const ingresosBrutosMes = bitacorasDelMes.reduce((sum, b) =>
         sum + (parseFloat(b.costoTotal) || 0), 0
       )
-      
+
       // Calcular gastos del mes (casetas + diesel + comisión + extras)
       const gastosMes = bitacorasDelMes.reduce((sum, b) => {
         return sum + (
@@ -271,19 +271,19 @@ const Dashboard = () => {
           parseFloat(b.gastosExtras || 0)
         )
       }, 0)
-      
+
       // Calcular ingresos netos (costoTotal - gastos)
       const ingresosMes = ingresosBrutosMes - gastosMes
 
       // Estadísticas de unidades
       // Estados posibles según la API: ACTIVA, MANTENIMIENTO, INACTIVA, FUERA_DE_SERVICIO
-      const unidadesActivas = unidades.filter(u => 
+      const unidadesActivas = unidades.filter(u =>
         u.estado === 'ACTIVA' || u.estado === 'ACTIVO' || u.estado === 'DISPONIBLE'
       ).length
-      const unidadesMantenimiento = unidades.filter(u => 
+      const unidadesMantenimiento = unidades.filter(u =>
         u.estado === 'MANTENIMIENTO' || u.estado === 'EN_MANTENIMIENTO'
       ).length
-      const unidadesFueraServicio = unidades.filter(u => 
+      const unidadesFueraServicio = unidades.filter(u =>
         u.estado === 'FUERA_DE_SERVICIO' || u.estado === 'INACTIVA' || u.estado === 'INACTIVO'
       ).length
 
@@ -292,6 +292,7 @@ const Dashboard = () => {
         activeTrips: viajesActivos,
         completedTrips: viajesCompletados,
         pendingTrips: viajesPendientes,
+        cancelledTrips: viajesCancelados,
         totalClients: clientes.length,
         monthlyRevenue: ingresosMes,
         monthlyExpenses: gastosMes,
@@ -312,10 +313,10 @@ const Dashboard = () => {
       const viajesFormateados = viajesOrdenados.map(v => {
         // El cliente ya viene en el objeto viaje
         const clienteNombre = v.cliente?.nombre || 'Cliente no encontrado'
-        const fecha = v.fechaSalida ? new Date(v.fechaSalida).toLocaleDateString('es-MX', { 
-          day: 'numeric', 
-          month: 'short', 
-          year: 'numeric' 
+        const fecha = v.fechaSalida ? new Date(v.fechaSalida).toLocaleDateString('es-MX', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
         }) : 'Sin fecha'
 
         return {
@@ -368,8 +369,8 @@ const Dashboard = () => {
       }
 
       // Alerta de bitácoras pendientes
-      const bitacorasPendientes = viajes.filter(v => 
-        v.estado === 'COMPLETADO' && 
+      const bitacorasPendientes = viajes.filter(v =>
+        v.estado === 'COMPLETADO' &&
         !bitacoras.some(b => b.viajeId === v.id)
       ).length
 
@@ -430,11 +431,11 @@ const Dashboard = () => {
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">Panel de Control</h1>
         <p className="text-sm lg:text-base text-slate-600 mt-1 lg:mt-2">
-          Resumen ejecutivo de operaciones - {new Date().toLocaleDateString('es-MX', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          Resumen ejecutivo de operaciones - {new Date().toLocaleDateString('es-MX', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
           })}
         </p>
       </div>
@@ -491,6 +492,10 @@ const Dashboard = () => {
             <div className="flex justify-between items-center">
               <span className="text-xs lg:text-sm text-slate-600">Pendientes</span>
               <span className="text-xs lg:text-sm font-semibold text-amber-600">{stats.pendingTrips}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs lg:text-sm text-slate-600">Cancelados</span>
+              <span className="text-xs lg:text-sm font-semibold text-red-600">{stats.cancelledTrips}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
               <span className="text-xs lg:text-sm text-slate-600 font-medium">Total</span>

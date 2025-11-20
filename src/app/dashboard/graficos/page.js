@@ -33,8 +33,12 @@ import toast from 'react-hot-toast'
 import { viajesService } from '@/app/services/viajesService'
 import { bitacoraService } from '@/app/services/bitacoraService'
 import { unidadesService } from '@/app/services/unidadesService'
+import { clientsService } from '@/app/services/clientsService'
+import { operadoresService } from '@/app/services/operadoresService'
+import { facturaService } from '@/app/services/facturaService'
+import { refaccionesService } from '@/app/services/refaccionesService'
 import { authService } from '@/app/services/authService'
-import { canViewChart, getRoleDisplayName } from '@/config/permissions'
+import { canViewChart, canViewStatCard, getRoleDisplayName } from '@/config/permissions'
 
 const COLORS = {
   primary: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
@@ -93,6 +97,10 @@ export default function GraficosPage() {
   const [viajes, setViajes] = useState([])
   const [bitacoras, setBitacoras] = useState([])
   const [unidades, setUnidades] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [operadores, setOperadores] = useState([])
+  const [facturas, setFacturas] = useState([])
+  const [refacciones, setRefacciones] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('6m') // 1m, 3m, 6m, 1a
   const [userRole, setUserRole] = useState(null)
@@ -109,18 +117,26 @@ export default function GraficosPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [viajesData, bitacorasData, unidadesData] = await Promise.all([
+      const [viajesData, bitacorasData, unidadesData, clientesData, operadoresData, facturasData, refaccionesData] = await Promise.all([
         viajesService.getViajes(0, 1000).catch(() => ({ content: [] })),
         bitacoraService.getAll().catch(() => ({ content: [] })),
-        unidadesService.getAll().catch(() => ({ content: [] }))
+        unidadesService.getAll().catch(() => ({ content: [] })),
+        clientsService.getClients(0, 1000).catch(() => ({ content: [] })),
+        operadoresService.getOperadores(0, 1000).catch(() => ({ content: [] })),
+        facturaService.getFacturas(0, 1000).catch(() => ({ content: [] })),
+        refaccionesService.getRefacciones(0, 1000).catch(() => ({ content: [] }))
       ])
 
-      console.log('Datos cargados:', { viajesData, bitacorasData, unidadesData })
+      console.log('Datos cargados:', { viajesData, bitacorasData, unidadesData, clientesData, operadoresData, facturasData, refaccionesData })
 
       // Extraer datos de la estructura paginada (content) o usar directamente si es array
       setViajes(Array.isArray(viajesData?.content) ? viajesData.content : Array.isArray(viajesData) ? viajesData : [])
       setBitacoras(Array.isArray(bitacorasData?.content) ? bitacorasData.content : Array.isArray(bitacorasData) ? bitacorasData : [])
       setUnidades(Array.isArray(unidadesData?.content) ? unidadesData.content : Array.isArray(unidadesData) ? unidadesData : [])
+      setClientes(Array.isArray(clientesData?.content) ? clientesData.content : Array.isArray(clientesData) ? clientesData : [])
+      setOperadores(Array.isArray(operadoresData?.content) ? operadoresData.content : Array.isArray(operadoresData) ? operadoresData : [])
+      setFacturas(Array.isArray(facturasData?.content) ? facturasData.content : Array.isArray(facturasData) ? facturasData : [])
+      setRefacciones(Array.isArray(refaccionesData?.content) ? refaccionesData.content : Array.isArray(refaccionesData) ? refaccionesData : [])
     } catch (error) {
       console.error('Error al cargar datos:', error)
       toast.error('Error al cargar los datos')
@@ -311,8 +327,143 @@ export default function GraficosPage() {
       .slice(0, 10)
   }
 
+  // Procesar datos para gráficos de clientes
+  const getViajesPorCliente = () => {
+    if (!Array.isArray(viajes) || viajes.length === 0) return []
+    
+    const clienteViajes = {}
+    viajes.forEach(viaje => {
+      const clienteNombre = viaje.cliente?.nombreComercial || viaje.cliente?.nombre || 'Sin cliente'
+      clienteViajes[clienteNombre] = (clienteViajes[clienteNombre] || 0) + 1
+    })
+    
+    return Object.entries(clienteViajes)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+  }
+
+  const getIngresosPorCliente = () => {
+    if (!Array.isArray(viajes) || viajes.length === 0) return []
+    
+    const clienteIngresos = {}
+    viajes.forEach(viaje => {
+      if (viaje.tarifa) {
+        const clienteNombre = viaje.cliente?.nombreComercial || viaje.cliente?.nombre || 'Sin cliente'
+        clienteIngresos[clienteNombre] = (clienteIngresos[clienteNombre] || 0) + parseFloat(viaje.tarifa)
+      }
+    })
+    
+    return Object.entries(clienteIngresos)
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8)
+  }
+
+  // Procesar datos para gráficos de operadores
+  const getViajesPorOperador = () => {
+    if (!Array.isArray(viajes) || viajes.length === 0) return []
+    
+    const operadorViajes = {}
+    viajes.forEach(viaje => {
+      const operadorNombre = viaje.operador?.nombre || 'Sin operador'
+      operadorViajes[operadorNombre] = (operadorViajes[operadorNombre] || 0) + 1
+    })
+    
+    return Object.entries(operadorViajes)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+  }
+
+  const getOperadoresEstatus = () => {
+    if (!Array.isArray(operadores) || operadores.length === 0) return []
+    
+    const estatus = {}
+    operadores.forEach(operador => {
+      const estado = operador.estatus || 'Disponible'
+      estatus[estado] = (estatus[estado] || 0) + 1
+    })
+    
+    return Object.entries(estatus).map(([name, value]) => ({ name, value }))
+  }
+
+  // Procesar datos para gráficos de facturas
+  const getFacturasPorEstatus = () => {
+    if (!Array.isArray(facturas) || facturas.length === 0) return []
+    
+    const estatus = {}
+    facturas.forEach(factura => {
+      const estado = factura.estatus || 'PENDIENTE'
+      estatus[estado] = (estatus[estado] || 0) + 1
+    })
+    
+    return Object.entries(estatus).map(([name, value]) => ({ name, value }))
+  }
+
+  const getFacturasPorMes = () => {
+    if (!Array.isArray(facturas) || facturas.length === 0) return []
+    
+    const meses = {}
+    facturas.forEach(factura => {
+      if (factura.fechaEmision) {
+        const fecha = new Date(factura.fechaEmision)
+        const anio = fecha.getFullYear()
+        const mes = fecha.getMonth()
+        const clave = `${anio}-${String(mes + 1).padStart(2, '0')}`
+        const nombreMes = fecha.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' })
+        
+        if (!meses[clave]) {
+          meses[clave] = { mes: nombreMes, monto: 0, cantidad: 0, orden: fecha.getTime() }
+        }
+        meses[clave].monto += parseFloat(factura.monto || 0)
+        meses[clave].cantidad++
+      }
+    })
+    
+    return Object.values(meses)
+      .sort((a, b) => a.orden - b.orden)
+      .slice(-6)
+      .map(({ mes, monto, cantidad }) => ({ mes, monto: Math.round(monto), cantidad }))
+  }
+
+  // Procesar datos para gráficos de refacciones
+  const getRefaccionesPorCategoria = () => {
+    if (!Array.isArray(refacciones) || refacciones.length === 0) return []
+    
+    const categorias = {}
+    refacciones.forEach(refaccion => {
+      const categoria = refaccion.categoria || 'Sin categoría'
+      categorias[categoria] = (categorias[categoria] || 0) + 1
+    })
+    
+    return Object.entries(categorias).map(([name, value]) => ({ name, value }))
+  }
+
+  const getInventarioBajo = () => {
+    if (!Array.isArray(refacciones) || refacciones.length === 0) return []
+    
+    return refacciones
+      .filter(refaccion => {
+        const stockMin = parseFloat(refaccion.stockMinimo || 0)
+        const stockActual = parseFloat(refaccion.stockActual || 0)
+        return stockActual <= stockMin && stockMin > 0
+      })
+      .map(refaccion => ({
+        nombre: refaccion.nombre || refaccion.descripcion || 'Sin nombre',
+        stock: parseFloat(refaccion.stockActual || 0),
+        minimo: parseFloat(refaccion.stockMinimo || 0)
+      }))
+      .slice(0, 10)
+  }
+
   // Calcular estadísticas
   const unidadesArray = Array.isArray(unidades) ? unidades : []
+  const clientesArray = Array.isArray(clientes) ? clientes : []
+  const operadoresArray = Array.isArray(operadores) ? operadores : []
+  const facturasArray = Array.isArray(facturas) ? facturas : []
+  const refaccionesArray = Array.isArray(refacciones) ? refacciones : []
+  
   const stats = {
     totalViajes: Array.isArray(viajes) ? viajes.length : 0,
     viajesActivos: Array.isArray(viajes) ? viajes.filter(v => v.estado === 'EN_CURSO').length : 0,
@@ -327,7 +478,17 @@ export default function GraficosPage() {
     totalUnidades: unidadesArray.length,
     unidadesActivas: unidadesArray.filter(u => u.estado === 'ACTIVA').length,
     unidadesMantenimiento: unidadesArray.filter(u => u.estado === 'MANTENIMIENTO').length,
-    unidadesInactivas: unidadesArray.filter(u => u.estado === 'INACTIVA').length
+    unidadesInactivas: unidadesArray.filter(u => u.estado === 'INACTIVA').length,
+    totalClientes: clientesArray.length,
+    totalOperadores: operadoresArray.length,
+    operadoresDisponibles: operadoresArray.filter(o => o.estatus === 'Disponible').length,
+    facturasPendientes: facturasArray.filter(f => f.estatus === 'PENDIENTE').length,
+    totalFacturasPendientes: facturasArray
+      .filter(f => f.estatus === 'PENDIENTE')
+      .reduce((sum, f) => sum + parseFloat(f.monto || 0), 0),
+    refaccionesStockBajo: refaccionesArray.filter(r => 
+      parseFloat(r.stockActual || 0) <= parseFloat(r.stockMinimo || 0) && parseFloat(r.stockMinimo || 0) > 0
+    ).length
   }
 
   if (isLoading) {
@@ -362,40 +523,92 @@ export default function GraficosPage() {
                 <option value="1m">Último mes</option>
                 <option value="3m">Últimos 3 meses</option>
                 <option value="6m">Últimos 6 meses</option>
-                <option value="1a">Último año</option>
+                <option value="1a">Últ  imo año</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-          <StatCard
-            title="Total de viajes"
-            value={stats.totalViajes}
-            icon={Truck}
-            color="bg-blue-600"
-            trend={8.5}
-          />
-          <StatCard
-            title="Viajes activos"
-            value={stats.viajesActivos}
-            icon={Activity}
-            color="bg-orange-600"
-          />
-          <StatCard
-            title="Gastos totales"
-            value={`$${stats.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`}
-            icon={DollarSign}
-            color="bg-red-600"
-            trend={-3.2}
-          />
-          <StatCard
-            title="Unidades activas"
-            value={`${stats.unidadesActivas}/${stats.totalUnidades}`}
-            icon={Truck}
-            color="bg-green-600"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          {canViewStatCard(userRole, 'total-viajes') && (
+            <StatCard
+              title="Total de viajes"
+              value={stats.totalViajes}
+              icon={Truck}
+              color="bg-blue-600"
+              trend={8.5}
+            />
+          )}
+          {canViewStatCard(userRole, 'viajes-activos') && (
+            <StatCard
+              title="Viajes activos"
+              value={stats.viajesActivos}
+              icon={Activity}
+              color="bg-orange-600"
+            />
+          )}
+          {canViewStatCard(userRole, 'gastos-totales') && (
+            <StatCard
+              title="Gastos totales"
+              value={`$${stats.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`}
+              icon={DollarSign}
+              color="bg-red-600"
+              trend={-3.2}
+            />
+          )}
+          {canViewStatCard(userRole, 'unidades-activas') && (
+            <StatCard
+              title="Unidades activas"
+              value={`${stats.unidadesActivas}/${stats.totalUnidades}`}
+              icon={Truck}
+              color="bg-green-600"
+            />
+          )}
+          {canViewStatCard(userRole, 'total-clientes') && (
+            <StatCard
+              title="Total clientes"
+              value={stats.totalClientes}
+              icon={Activity}
+              color="bg-purple-600"
+            />
+          )}
+          {canViewStatCard(userRole, 'operadores-disponibles') && (
+            <StatCard
+              title="Operadores disponibles"
+              value={`${stats.operadoresDisponibles}/${stats.totalOperadores}`}
+              icon={Activity}
+              color="bg-cyan-600"
+            />
+          )}
+        </div>
+
+        {/* Segunda fila de stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          {canViewStatCard(userRole, 'facturas-pendientes') && (
+            <StatCard
+              title="Facturas pendientes"
+              value={stats.facturasPendientes}
+              icon={DollarSign}
+              color="bg-yellow-600"
+            />
+          )}
+          {canViewStatCard(userRole, 'monto-por-cobrar') && (
+            <StatCard
+              title="Monto por cobrar"
+              value={`$${stats.totalFacturasPendientes.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`}
+              icon={DollarSign}
+              color="bg-amber-600"
+            />
+          )}
+          {canViewStatCard(userRole, 'refacciones-stock-bajo') && (
+            <StatCard
+              title="Refacciones stock bajo"
+              value={stats.refaccionesStockBajo}
+              icon={Activity}
+              color="bg-rose-600"
+            />
+          )}
         </div>
 
         {/* Gráficos principales */}
@@ -705,6 +918,369 @@ export default function GraficosPage() {
           </div>
         </div>
         )}
+
+        {/* Gráficos de Clientes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Viajes por cliente */}
+          {canViewChart(userRole, 'viajes-cliente') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Viajes por Cliente</h3>
+                <p className="text-sm text-slate-600">Top 10 clientes</p>
+              </div>
+              <Activity className="h-6 w-6 text-purple-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={getViajesPorCliente()} layout="vertical">
+                <defs>
+                  <linearGradient id="gradCliente" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#a855f7" stopOpacity={0.6}/>
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                <XAxis type="number" stroke="#334155" style={{ fontSize: '12px' }} />
+                <YAxis type="category" dataKey="name" stroke="#334155" style={{ fontSize: '10px' }} width={100} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(168, 85, 247, 0.1)' }} />
+                <Bar dataKey="value" name="Viajes" fill="url(#gradCliente)" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+
+          {/* Ingresos por cliente */}
+          {canViewChart(userRole, 'ingresos-cliente') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Ingresos por Cliente</h3>
+                <p className="text-sm text-slate-600">Top 8 clientes más rentables</p>
+              </div>
+              <DollarSign className="h-6 w-6 text-purple-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <defs>
+                  {COLORS.primary.map((color, index) => (
+                    <linearGradient key={`gradIngCliente${index}`} id={`gradIngCliente${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={color} stopOpacity={0.7}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Pie
+                  data={getIngresosPorCliente()}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {getIngresosPorCliente().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={`url(#gradIngCliente${index % COLORS.primary.length})`} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={60}
+                  formatter={(value, entry) => (
+                    <span style={{ color: '#475569', fontSize: '11px' }}>
+                      {value}: ${entry.payload.value.toLocaleString('es-MX')}
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+        </div>
+
+        {/* Gráficos de Operadores */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Viajes por operador */}
+          {canViewChart(userRole, 'viajes-operador') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Viajes por Operador</h3>
+                <p className="text-sm text-slate-600">Top 10 operadores</p>
+              </div>
+              <Activity className="h-6 w-6 text-cyan-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={getViajesPorOperador()}>
+                <defs>
+                  <linearGradient id="gradOperador" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.6}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" stroke="#334155" style={{ fontSize: '10px' }} angle={-45} textAnchor="end" height={80} />
+                <YAxis stroke="#334155" style={{ fontSize: '12px' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(6, 182, 212, 0.1)' }} />
+                <Bar dataKey="value" name="Viajes" fill="url(#gradOperador)" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+
+          {/* Operadores por estatus */}
+          {canViewChart(userRole, 'operadores-estatus') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Operadores por Estatus</h3>
+                <p className="text-sm text-slate-600">Disponibilidad actual</p>
+              </div>
+              <Activity className="h-6 w-6 text-cyan-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <defs>
+                  <linearGradient id="gradDisp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="gradOcup" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="gradDesc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <Pie
+                  data={getOperadoresEstatus()}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {getOperadoresEstatus().map((entry, index) => {
+                    const fillMap = {
+                      'Disponible': 'url(#gradDisp)',
+                      'Ocupado': 'url(#gradOcup)',
+                      'Descanso': 'url(#gradDesc)'
+                    }
+                    return <Cell key={`cell-${index}`} fill={fillMap[entry.name] || COLORS.primary[index]} />
+                  })}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry) => (
+                    <span style={{ color: '#475569', fontSize: '12px' }}>
+                      {value}: {entry.payload.value}
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+        </div>
+
+        {/* Gráficos de Facturas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Facturas por estatus */}
+          {canViewChart(userRole, 'facturas-estatus') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Facturas por Estatus</h3>
+                <p className="text-sm text-slate-600">Estado actual de facturación</p>
+              </div>
+              <DollarSign className="h-6 w-6 text-amber-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <defs>
+                  <linearGradient id="gradPend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="gradPag" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="gradCanc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <Pie
+                  data={getFacturasPorEstatus()}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {getFacturasPorEstatus().map((entry, index) => {
+                    const fillMap = {
+                      'PENDIENTE': 'url(#gradPend)',
+                      'PAGADO': 'url(#gradPag)',
+                      'CANCELADO': 'url(#gradCanc)'
+                    }
+                    return <Cell key={`cell-${index}`} fill={fillMap[entry.name] || COLORS.primary[index]} />
+                  })}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry) => (
+                    <span style={{ color: '#475569', fontSize: '12px' }}>
+                      {value}: {entry.payload.value}
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+
+          {/* Facturas mensuales */}
+          {canViewChart(userRole, 'facturas-mensuales') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Facturas Mensuales</h3>
+                <p className="text-sm text-slate-600">Monto y cantidad por mes</p>
+              </div>
+              <Calendar className="h-6 w-6 text-amber-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={getFacturasPorMes()}>
+                <defs>
+                  <linearGradient id="colorMonto" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                  </linearGradient>
+                  <linearGradient id="colorCantidad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="mes" stroke="#334155" style={{ fontSize: '12px' }} />
+                <YAxis yAxisId="left" stroke="#334155" style={{ fontSize: '12px' }} />
+                <YAxis yAxisId="right" orientation="right" stroke="#334155" style={{ fontSize: '12px' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(245, 158, 11, 0.05)' }} />
+                <Legend />
+                <Bar
+                  yAxisId="left"
+                  dataKey="monto"
+                  name="Monto"
+                  fill="url(#colorMonto)"
+                  radius={[8, 8, 0, 0]}
+                />
+                <Bar
+                  yAxisId="right"
+                  dataKey="cantidad"
+                  name="Cantidad"
+                  fill="url(#colorCantidad)"
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+        </div>
+
+        {/* Gráficos de Refacciones */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Refacciones por categoría */}
+          {canViewChart(userRole, 'refacciones-categoria') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Refacciones por Categoría</h3>
+                <p className="text-sm text-slate-600">Distribución del inventario</p>
+              </div>
+              <PieChartIcon className="h-6 w-6 text-rose-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <defs>
+                  {COLORS.primary.map((color, index) => (
+                    <linearGradient key={`gradRefCat${index}`} id={`gradRefCat${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={color} stopOpacity={0.7}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Pie
+                  data={getRefaccionesPorCategoria()}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {getRefaccionesPorCategoria().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={`url(#gradRefCat${index % COLORS.primary.length})`} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry) => (
+                    <span style={{ color: '#475569', fontSize: '12px' }}>
+                      {value}: {entry.payload.value}
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+
+          {/* Inventario bajo */}
+          {canViewChart(userRole, 'inventario-bajo') && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Inventario Bajo</h3>
+                <p className="text-sm text-slate-600">Refacciones con stock bajo</p>
+              </div>
+              <Activity className="h-6 w-6 text-rose-600" />
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={getInventarioBajo()} layout="vertical">
+                <defs>
+                  <linearGradient id="gradStock" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.6}/>
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity={1}/>
+                  </linearGradient>
+                  <linearGradient id="gradMin" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6}/>
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                <XAxis type="number" stroke="#334155" style={{ fontSize: '12px' }} />
+                <YAxis type="category" dataKey="nombre" stroke="#334155" style={{ fontSize: '10px' }} width={120} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(239, 68, 68, 0.1)' }} />
+                <Legend />
+                <Bar dataKey="stock" name="Stock Actual" fill="url(#gradStock)" radius={[0, 8, 8, 0]} />
+                <Bar dataKey="minimo" name="Stock Mínimo" fill="url(#gradMin)" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          )}
+        </div>
       </div>
     </div>
   )

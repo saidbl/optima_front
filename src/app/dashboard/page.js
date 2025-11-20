@@ -19,6 +19,8 @@ import { viajesService } from '@/app/services/viajesService'
 import { clientsService } from '@/app/services/clientsService'
 import { unidadesService } from '@/app/services/unidadesService'
 import { bitacoraService } from '@/app/services/bitacoraService'
+import { authService } from '@/app/services/authService'
+import { canViewDashboardElement } from '@/config/permissions'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -147,8 +149,43 @@ const TasksWidget = ({ tasks }) => (
   </div>
 )
 
-const QuickActions = () => {
+const QuickActions = ({ userRole }) => {
   const router = useRouter()
+
+  const actions = [
+    {
+      id: 'action-nuevo-viaje',
+      onClick: () => router.push('/dashboard/viajes'),
+      icon: Truck,
+      label: 'Nuevo viaje',
+      color: 'bg-slate-600 hover:bg-slate-700'
+    },
+    {
+      id: 'action-bitacora',
+      onClick: () => router.push('/dashboard/bitacora'),
+      icon: FileText,
+      label: 'Bitácora',
+      color: 'bg-emerald-600 hover:bg-emerald-700'
+    },
+    {
+      id: 'action-nuevo-cliente',
+      onClick: () => router.push('/dashboard/clientes'),
+      icon: Users,
+      label: 'Nuevo cliente',
+      color: 'bg-blue-600 hover:bg-blue-700'
+    },
+    {
+      id: 'action-ver-reportes',
+      onClick: () => router.push('/dashboard/graficos'),
+      icon: BarChart3,
+      label: 'Ver reportes',
+      color: 'bg-purple-600 hover:bg-purple-700'
+    }
+  ]
+
+  const allowedActions = actions.filter(action => canViewDashboardElement(userRole, action.id))
+
+  if (allowedActions.length === 0) return null
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
@@ -157,34 +194,16 @@ const QuickActions = () => {
       </div>
       <div className="p-4 lg:p-6">
         <div className="grid grid-cols-2 gap-3 lg:gap-4">
-          <button
-            onClick={() => router.push('/dashboard/viajes')}
-            className="p-3 lg:p-4 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-center"
-          >
-            <Truck className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium">Nuevo viaje</span>
-          </button>
-          <button
-            onClick={() => router.push('/dashboard/bitacora')}
-            className="p-3 lg:p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-center"
-          >
-            <FileText className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium">Bitácora</span>
-          </button>
-          <button
-            onClick={() => router.push('/dashboard/clientes')}
-            className="p-3 lg:p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
-          >
-            <Users className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium">Nuevo cliente</span>
-          </button>
-          <button
-            onClick={() => router.push('/dashboard/graficos')}
-            className="p-3 lg:p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
-          >
-            <BarChart3 className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
-            <span className="text-xs lg:text-sm font-medium">Ver reportes</span>
-          </button>
+          {allowedActions.map((action) => (
+            <button
+              key={action.id}
+              onClick={action.onClick}
+              className={`p-3 lg:p-4 ${action.color} text-white rounded-lg transition-colors text-center`}
+            >
+              <action.icon className="h-5 w-5 lg:h-6 lg:w-6 mx-auto mb-1 lg:mb-2" />
+              <span className="text-xs lg:text-sm font-medium">{action.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -193,6 +212,7 @@ const QuickActions = () => {
 
 const Dashboard = () => {
   const router = useRouter()
+  const [userRole, setUserRole] = useState(null)
   const [stats, setStats] = useState({
     totalTrips: 0,
     activeTrips: 0,
@@ -212,6 +232,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Obtener el rol del usuario
+    const user = authService.getUser()
+    if (user?.rol) {
+      setUserRole(user.rol)
+    }
     loadDashboardData()
   }, [])
 
@@ -442,108 +467,124 @@ const Dashboard = () => {
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <StatCard
-          title="Viajes Activos"
-          value={stats.activeTrips}
-          change={stats.activeTrips > 0 ? `${stats.activeTrips} en ruta` : 'Sin viajes activos'}
-          changeType="positive"
-          icon={Truck}
-          color="bg-blue-600"
-          description="En curso actualmente"
-        />
-        <StatCard
-          title="Gastos del Mes"
-          value={`$${(stats.monthlyExpenses / 1000).toFixed(1)}K`}
-          icon={TrendingDown}
-          color="bg-red-600"
-          description="Total de gastos operativos"
-        />
-        <StatCard
-          title="Ingresos del Mes"
-          value={`$${(stats.monthlyRevenue / 1000).toFixed(1)}K`}
-          icon={DollarSign}
-          color="bg-purple-600"
-          description="Utilidad neta del mes"
-        />
-        <StatCard
-          title="Viajes Completados"
-          value={stats.completedTrips}
-          icon={CheckCircle}
-          color="bg-green-600"
-          description={`De ${stats.totalTrips} totales`}
-        />
+        {canViewDashboardElement(userRole, 'stat-viajes-activos') && (
+          <StatCard
+            title="Viajes Activos"
+            value={stats.activeTrips}
+            change={stats.activeTrips > 0 ? `${stats.activeTrips} en ruta` : 'Sin viajes activos'}
+            changeType="positive"
+            icon={Truck}
+            color="bg-blue-600"
+            description="En curso actualmente"
+          />
+        )}
+        {canViewDashboardElement(userRole, 'stat-gastos-mes') && (
+          <StatCard
+            title="Gastos del Mes"
+            value={`$${(stats.monthlyExpenses / 1000).toFixed(1)}K`}
+            icon={TrendingDown}
+            color="bg-red-600"
+            description="Total de gastos operativos"
+          />
+        )}
+        {canViewDashboardElement(userRole, 'stat-ingresos-mes') && (
+          <StatCard
+            title="Ingresos del Mes"
+            value={`$${(stats.monthlyRevenue / 1000).toFixed(1)}K`}
+            icon={DollarSign}
+            color="bg-purple-600"
+            description="Utilidad neta del mes"
+          />
+        )}
+        {canViewDashboardElement(userRole, 'stat-viajes-completados') && (
+          <StatCard
+            title="Viajes Completados"
+            value={stats.completedTrips}
+            icon={CheckCircle}
+            color="bg-green-600"
+            description={`De ${stats.totalTrips} totales`}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6 border border-slate-200">
-          <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <h3 className="text-base lg:text-lg font-semibold text-slate-900">Estado de Viajes</h3>
-            <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-slate-400" />
+        {canViewDashboardElement(userRole, 'widget-estado-viajes') && (
+          <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h3 className="text-base lg:text-lg font-semibold text-slate-900">Estado de Viajes</h3>
+              <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-slate-400" />
+            </div>
+            <div className="space-y-2 lg:space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">En Curso</span>
+                <span className="text-xs lg:text-sm font-semibold text-blue-600">{stats.activeTrips}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">Completados</span>
+                <span className="text-xs lg:text-sm font-semibold text-emerald-600">{stats.completedTrips}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">Pendientes</span>
+                <span className="text-xs lg:text-sm font-semibold text-amber-600">{stats.pendingTrips}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">Cancelados</span>
+                <span className="text-xs lg:text-sm font-semibold text-red-600">{stats.cancelledTrips}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                <span className="text-xs lg:text-sm text-slate-600 font-medium">Total</span>
+                <span className="text-xs lg:text-sm font-bold text-slate-900">{stats.totalTrips}</span>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2 lg:space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">En Curso</span>
-              <span className="text-xs lg:text-sm font-semibold text-blue-600">{stats.activeTrips}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">Completados</span>
-              <span className="text-xs lg:text-sm font-semibold text-emerald-600">{stats.completedTrips}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">Pendientes</span>
-              <span className="text-xs lg:text-sm font-semibold text-amber-600">{stats.pendingTrips}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">Cancelados</span>
-              <span className="text-xs lg:text-sm font-semibold text-red-600">{stats.cancelledTrips}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-              <span className="text-xs lg:text-sm text-slate-600 font-medium">Total</span>
-              <span className="text-xs lg:text-sm font-bold text-slate-900">{stats.totalTrips}</span>
-            </div>
-          </div>
-        </div>
+        )}
 
-        <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6 border border-slate-200">
-          <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <h3 className="text-base lg:text-lg font-semibold text-slate-900">Flota Vehicular</h3>
-            <Truck className="h-4 w-4 lg:h-5 lg:w-5 text-slate-400" />
+        {canViewDashboardElement(userRole, 'widget-flota-vehicular') && (
+          <div className="bg-white rounded-xl shadow-sm p-4 lg:p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h3 className="text-base lg:text-lg font-semibold text-slate-900">Flota Vehicular</h3>
+              <Truck className="h-4 w-4 lg:h-5 lg:w-5 text-slate-400" />
+            </div>
+            <div className="space-y-2 lg:space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">Activos</span>
+                <span className="text-xs lg:text-sm font-semibold text-emerald-600">{stats.vehiclesActive}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">En Mantenimiento</span>
+                <span className="text-xs lg:text-sm font-semibold text-amber-600">{stats.vehiclesMaintenance}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs lg:text-sm text-slate-600">Fuera de Servicio</span>
+                <span className="text-xs lg:text-sm font-semibold text-red-600">{stats.vehiclesOutOfService}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                <span className="text-xs lg:text-sm text-slate-600 font-medium">Total</span>
+                <span className="text-xs lg:text-sm font-bold text-slate-900">
+                  {stats.vehiclesActive + stats.vehiclesMaintenance + stats.vehiclesOutOfService}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2 lg:space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">Activos</span>
-              <span className="text-xs lg:text-sm font-semibold text-emerald-600">{stats.vehiclesActive}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">En Mantenimiento</span>
-              <span className="text-xs lg:text-sm font-semibold text-amber-600">{stats.vehiclesMaintenance}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs lg:text-sm text-slate-600">Fuera de Servicio</span>
-              <span className="text-xs lg:text-sm font-semibold text-red-600">{stats.vehiclesOutOfService}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-              <span className="text-xs lg:text-sm text-slate-600 font-medium">Total</span>
-              <span className="text-xs lg:text-sm font-bold text-slate-900">
-                {stats.vehiclesActive + stats.vehiclesMaintenance + stats.vehiclesOutOfService}
-              </span>
-            </div>
-          </div>
-        </div>
+        )}
 
         <div className="md:col-span-2 lg:col-span-1">
-          <QuickActions />
+          <QuickActions userRole={userRole} />
         </div>
       </div>
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-2">
-          <RecentTrips trips={recentTrips} />
-        </div>
-        <div>
-          <TasksWidget tasks={tasks} />
-        </div>
+        {canViewDashboardElement(userRole, 'widget-viajes-recientes') && (
+          <div className="lg:col-span-2">
+            <RecentTrips trips={recentTrips} />
+          </div>
+        )}
+        {canViewDashboardElement(userRole, 'widget-alertas-tareas') && (
+          <div className={!canViewDashboardElement(userRole, 'widget-viajes-recientes') ? 'lg:col-span-3' : ''}>
+            <TasksWidget tasks={tasks} />
+          </div>
+        )}
       </div>
     </div>
   )

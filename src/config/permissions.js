@@ -49,6 +49,7 @@ export const PERMISSIONS = {
 
   [ROLES.ALMACEN]: {
     allowedRoutes: [
+      '/dashboard',
       '/dashboard/graficos',
       '/dashboard/almacen',
       '/dashboard/almacen/*', // Permite todas las subrutas de almacen
@@ -58,6 +59,7 @@ export const PERMISSIONS = {
 
   [ROLES.NOMINA]: {
     allowedRoutes: [
+      '/dashboard',
       '/dashboard/nomina',
       '/dashboard/facturas',
       '/dashboard/facturas/extra',
@@ -70,6 +72,7 @@ export const PERMISSIONS = {
 
   [ROLES.LOGISTICA]: {
     allowedRoutes: [
+      '/dashboard',
       '/dashboard/tarifas-comisiones',
       '/dashboard/graficos',
       '/dashboard/viajes',
@@ -196,42 +199,70 @@ export const getRoleDisplayName = (role) => {
 export const GRAFICOS_PERMISSIONS = {
   [ROLES.ADMIN]: {
     allowedCharts: [
+      // Gráficos financieros
       'ingresos-vs-gastos',
       'gastos-categoria',
+      'gastos-mensuales',
+      // Gráficos de viajes
       'viajes-mes',
       'viajes-estado',
+      // Gráficos de unidades
       'unidades-estado',
       'kilometraje-unidad',
-      'gastos-mensuales',
+      // Gráficos de mantenimiento
       'mantenimientos-tipo',
-      'mantenimientos-costo'
+      'mantenimientos-costo',
+      // Gráficos de clientes
+      'viajes-cliente',
+      'ingresos-cliente',
+      // Gráficos de operadores
+      'viajes-operador',
+      'operadores-estatus',
+      // Gráficos de facturas
+      'facturas-estatus',
+      'facturas-mensuales',
+      // Gráficos de refacciones
+      'refacciones-categoria',
+      'inventario-bajo'
     ]
   },
 
   [ROLES.ALMACEN]: {
     allowedCharts: [
-      'unidades-estado',
-      'kilometraje-unidad',
+      // Mantenimiento
       'mantenimientos-tipo',
-      'mantenimientos-costo'
+      'mantenimientos-costo',
+      // Refacciones e inventario
+      'refacciones-categoria',
+      'inventario-bajo'
     ]
   },
 
   [ROLES.NOMINA]: {
     allowedCharts: [
+      // Gastos y finanzas
       'gastos-mensuales',
       'gastos-categoria',
-      'viajes-mes',
-      'viajes-estado'
+      'ingresos-vs-gastos',
+      // Operadores
+      'viajes-operador',
+      'operadores-estatus',
+      // Facturas
+      'facturas-estatus',
+      'facturas-mensuales'
     ]
   },
 
   [ROLES.LOGISTICA]: {
     allowedCharts: [
+      // Viajes y operaciones
       'viajes-mes',
       'viajes-estado',
-      'ingresos-vs-gastos',
-      'unidades-estado'
+      // Unidades
+      'kilometraje-unidad',
+      // Clientes
+      'viajes-cliente',
+      'ingresos-cliente',
     ]
   }
 }
@@ -270,4 +301,195 @@ export const getAllowedCharts = (userRole) => {
   if (!roleCharts) return []
 
   return roleCharts.allowedCharts
+}
+
+/**
+ * Configuración de StatCards (tarjetas de estadísticas) permitidas por rol
+ * Define qué tarjetas de estadísticas puede ver cada rol en la página de gráficos
+ */
+export const STATCARDS_PERMISSIONS = {
+  [ROLES.ADMIN]: {
+    allowedStatCards: [
+      // Tarjetas de viajes
+      'total-viajes',
+      'viajes-activos',
+      // Tarjetas financieras
+      'gastos-totales',
+      // Tarjetas de unidades
+      'unidades-activas',
+      // Tarjetas de clientes
+      'total-clientes',
+      // Tarjetas de operadores
+      'operadores-disponibles',
+      // Tarjetas de facturas
+      'facturas-pendientes',
+      'monto-por-cobrar',
+      // Tarjetas de refacciones
+      'refacciones-stock-bajo'
+    ]
+  },
+
+  [ROLES.ALMACEN]: {
+    allowedStatCards: [
+      // Refacciones
+      'refacciones-stock-bajo'
+    ]
+  },
+
+  [ROLES.NOMINA]: {
+    allowedStatCards: [
+  
+      // Finanzas
+      'gastos-totales',
+      // Operadores
+      'operadores-disponibles',
+      // Facturas
+      'facturas-pendientes',
+      'monto-por-cobrar'
+    ]
+  },
+
+  [ROLES.LOGISTICA]: {
+    allowedStatCards: [
+      // Viajes
+      'total-viajes',
+      'viajes-activos',
+      // Clientes
+      'total-clientes',
+    ]
+  }
+}
+
+/**
+ * Verifica si un rol puede ver una tarjeta de estadística específica
+ * @param {string} userRole - El rol del usuario
+ * @param {string} statCardId - ID de la tarjeta de estadística
+ * @returns {boolean} - true si puede ver la tarjeta
+ */
+export const canViewStatCard = (userRole, statCardId) => {
+  if (!userRole) return false
+
+  const normalizedRole = normalizeRole(userRole)
+  const roleStatCards = STATCARDS_PERMISSIONS[normalizedRole]
+
+  if (!roleStatCards) return false
+
+  // Admin puede ver todo
+  if (normalizedRole === ROLES.ADMIN) return true
+
+  return roleStatCards.allowedStatCards.includes(statCardId)
+}
+
+/**
+ * Obtiene la lista de StatCards permitidas para un rol
+ * @param {string} userRole - El rol del usuario
+ * @returns {Array} - Array de IDs de StatCards permitidas
+ */
+export const getAllowedStatCards = (userRole) => {
+  if (!userRole) return []
+
+  const normalizedRole = normalizeRole(userRole)
+  const roleStatCards = STATCARDS_PERMISSIONS[normalizedRole]
+
+  if (!roleStatCards) return []
+
+  return roleStatCards.allowedStatCards
+}
+
+/**
+ * Configuración de elementos del Dashboard principal permitidos por rol
+ * Define qué secciones y widgets puede ver cada rol en el dashboard principal
+ */
+export const DASHBOARD_PERMISSIONS = {
+  [ROLES.ADMIN]: {
+    allowedElements: [
+      // StatCards principales
+      'stat-viajes-activos',
+      'stat-gastos-mes',
+      'stat-ingresos-mes',
+      'stat-viajes-completados',
+      // Widgets
+      'widget-estado-viajes',
+      'widget-flota-vehicular',
+      'widget-viajes-recientes',
+      'widget-alertas-tareas',
+      // Acciones rápidas
+      'action-nuevo-viaje',
+      'action-bitacora',
+      'action-nuevo-cliente',
+      'action-ver-reportes'
+    ]
+  },
+
+  [ROLES.ALMACEN]: {
+    allowedElements: [
+      'action-ver-reportes'
+    ]
+  },
+
+  [ROLES.NOMINA]: {
+    allowedElements: [
+      // StatCards
+      'stat-viajes-activos',
+      'stat-gastos-mes',
+      'stat-ingresos-mes',
+      // Widgets
+      'widget-alertas-tareas',
+      // Acciones rápidas
+      'action-ver-reportes'
+    ]
+  },
+
+  [ROLES.LOGISTICA]: {
+    allowedElements: [
+      // StatCards
+      'stat-viajes-activos',
+      'stat-viajes-completados',
+      // Widgets
+      'widget-estado-viajes',
+      'widget-flota-vehicular',
+      'widget-viajes-recientes',
+      // Acciones rápidas
+      'action-nuevo-viaje',
+      'action-bitacora',
+      'action-nuevo-cliente',
+      'action-ver-reportes'
+    ]
+  }
+}
+
+/**
+ * Verifica si un rol puede ver un elemento del dashboard
+ * @param {string} userRole - El rol del usuario
+ * @param {string} elementId - ID del elemento del dashboard
+ * @returns {boolean} - true si puede ver el elemento
+ */
+export const canViewDashboardElement = (userRole, elementId) => {
+  if (!userRole) return false
+
+  const normalizedRole = normalizeRole(userRole)
+  const roleDashboard = DASHBOARD_PERMISSIONS[normalizedRole]
+
+  if (!roleDashboard) return false
+
+  // Admin puede ver todo
+  if (normalizedRole === ROLES.ADMIN) return true
+
+  return roleDashboard.allowedElements.includes(elementId)
+}
+
+/**
+ * Obtiene la lista de elementos del dashboard permitidos para un rol
+ * @param {string} userRole - El rol del usuario
+ * @returns {Array} - Array de IDs de elementos permitidos
+ */
+export const getAllowedDashboardElements = (userRole) => {
+  if (!userRole) return []
+
+  const normalizedRole = normalizeRole(userRole)
+  const roleDashboard = DASHBOARD_PERMISSIONS[normalizedRole]
+
+  if (!roleDashboard) return []
+
+  return roleDashboard.allowedElements
 }

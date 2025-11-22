@@ -135,7 +135,9 @@ export default function TarifasComisionesPage() {
       ruta.destino?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ruta.id?.toString().includes(searchTerm)
 
-    const matchesCliente = clienteFilter === '' || ruta.clienteId?.toString() === clienteFilter
+    // Corregir filtro: ruta.cliente es un objeto, no un ID
+    const rutaClienteId = ruta.cliente?.id || ruta.clienteId
+    const matchesCliente = clienteFilter === '' || rutaClienteId?.toString() === clienteFilter
 
     return matchesSearch && matchesCliente
   })

@@ -78,6 +78,11 @@ const EditGastoSemanalModal = ({ isOpen, onClose, onSubmit, gasto }) => {
       return
     }
 
+    // Obtener el ID del creador (puede ser un objeto o un número)
+    const creadoPorId = typeof gasto.creadoPor === 'object' 
+      ? gasto.creadoPor?.id 
+      : gasto.creadoPor
+
     const gastoData = {
       ...formData,
       iave: parseFloat(formData.iave || 0),
@@ -91,7 +96,8 @@ const EditGastoSemanalModal = ({ isOpen, onClose, onSubmit, gasto }) => {
       gastosExtras: parseFloat(formData.gastosExtras || 0),
       seguros: parseFloat(formData.seguros || 0),
       creditos: parseFloat(formData.creditos || 0),
-      telefonia: parseFloat(formData.telefonia || 0)
+      telefonia: parseFloat(formData.telefonia || 0),
+      creadoPor: creadoPorId
     }
 
     await onSubmit(gasto.id, gastoData)

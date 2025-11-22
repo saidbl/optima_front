@@ -26,19 +26,36 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
   const [loadingDatos, setLoadingDatos] = useState(false)
   const [totalViajes, setTotalViajes] = useState(0)
 
-  // Cargar solo totalViajes de la API al abrir el modal
+  // Cargar datos desde la API al abrir el modal (prellenado pero editable)
   useEffect(() => {
-    const loadTotalViajes = async () => {
+    const loadDatosGenerados = async () => {
       if (isOpen) {
         setLoadingDatos(true)
         try {
-          // Cargar datos generados desde la API (solo para obtener totalViajes)
+          // Cargar datos generados desde la API
           const datosGenerados = await gastosService.getGastosGenerados()
+          
+          // Prellenar todos los campos con los datos de la API
+          setFormData({
+            casetas: datosGenerados.iave?.toString() || '',
+            dieselLitros: datosGenerados.diesel?.toString() || '',
+            comisionOperador: datosGenerados.nomina?.toString() || '',
+            gastosExtras: datosGenerados.gastosExtras?.toString() || '',
+            costoTotal: (
+              (parseFloat(datosGenerados.iave) || 0) +
+              (parseFloat(datosGenerados.diesel) || 0) +
+              (parseFloat(datosGenerados.nomina) || 0) +
+              (parseFloat(datosGenerados.gastosExtras) || 0)
+            ).toString()
+          })
+          
           setTotalViajes(datosGenerados.totalViajes || 0)
           setErrors({})
+          
+          toast.success('Datos precargados desde los viajes completados')
         } catch (error) {
-          console.error('Error al cargar total de viajes:', error)
-          toast.error('Error al cargar total de viajes')
+          console.error('Error al cargar datos generados:', error)
+          toast.error('Error al cargar datos automáticos')
           setTotalViajes(0)
         } finally {
           setLoadingDatos(false)
@@ -57,7 +74,7 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
       }
     }
 
-    loadTotalViajes()
+    loadDatosGenerados()
   }, [isOpen])
 
   // Función de validación
@@ -176,9 +193,22 @@ const CreateBitacoraModal = ({ isOpen, onClose, onSave, viajes, operadores, clie
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Aviso de datos prellenados */}
+          {!loadingDatos && formData.casetas && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-900">Datos automáticos cargados</p>
+                <p className="text-sm text-emerald-700 mt-1">
+                  Los campos se han prellenado con los datos calculados de los viajes completados. Puedes modificarlos según sea necesario.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Tarjeta de información de Total de Viajes */}
           {totalViajes > 0 && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
+            <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">

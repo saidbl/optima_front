@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, DollarSign, Calendar, TrendingUp, TrendingDown } from 'lucide-react'
 import gastosService from '@/app/services/gastosService'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 import {
   StatCard,
   GastoSemanalCard,

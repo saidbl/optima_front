@@ -82,7 +82,7 @@ const ViewGastoSemanalModal = ({ isOpen, onClose, gasto, calcularTotal }) => {
           </div>
 
           {/* Total */}
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border-2 border-red-200">
+          <div className="bg-linear-to-r from-red-50 to-orange-50 rounded-xl p-6 border-2 border-red-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600 mb-1">Total de Gastos</p>
@@ -105,14 +105,15 @@ const ViewGastoSemanalModal = ({ isOpen, onClose, gasto, calcularTotal }) => {
           {/* Metadata */}
           <div className="border-t border-slate-200 pt-4">
             <div className="grid grid-cols-2 gap-4 text-xs text-slate-500">
-              <div>
-                <p className="mb-1">ID de Gasto</p>
-                <p className="font-medium text-slate-700">#{gasto.id}</p>
-              </div>
               {gasto.creadoPor && (
                 <div>
-                  <p className="mb-1">Creado por (ID)</p>
-                  <p className="font-medium text-slate-700">Usuario #{gasto.creadoPor}</p>
+                  <p className="mb-1">Creado por</p>
+                  <p className="font-medium text-slate-700">
+                    {typeof gasto.creadoPor === 'object' 
+                      ? gasto.creadoPor.nombre || gasto.creadoPor.email || `Usuario #${gasto.creadoPor.id}`
+                      : `Usuario #${gasto.creadoPor}`
+                    }
+                  </p>
                 </div>
               )}
             </div>

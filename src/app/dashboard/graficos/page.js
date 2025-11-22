@@ -431,30 +431,57 @@ export default function GraficosPage() {
   const getRefaccionesPorCategoria = () => {
     if (!Array.isArray(refacciones) || refacciones.length === 0) return []
     
-    const categorias = {}
+    // Clasificar refacciones por nivel de stock
+    const niveles = {
+      'Crítico (< 5)': 0,
+      'Bajo (5-10)': 0,
+      'Normal (11-20)': 0,
+      'Suficiente (21-50)': 0,
+      'Alto (> 50)': 0
+    }
+    
     refacciones.forEach(refaccion => {
-      const categoria = refaccion.categoria || 'Sin categoría'
-      categorias[categoria] = (categorias[categoria] || 0) + 1
+      const stock = parseFloat(refaccion.stockActual || 0)
+      
+      if (stock < 5) {
+        niveles['Crítico (< 5)']++
+      } else if (stock <= 10) {
+        niveles['Bajo (5-10)']++
+      } else if (stock <= 20) {
+        niveles['Normal (11-20)']++
+      } else if (stock <= 50) {
+        niveles['Suficiente (21-50)']++
+      } else {
+        niveles['Alto (> 50)']++
+      }
     })
     
-    return Object.entries(categorias).map(([name, value]) => ({ name, value }))
+    return Object.entries(niveles)
+      .map(([name, value]) => ({ name, value }))
+      .filter(item => item.value > 0) // Solo mostrar niveles con refacciones
   }
 
   const getInventarioBajo = () => {
-    if (!Array.isArray(refacciones) || refacciones.length === 0) return []
+    if (!Array.isArray(refacciones) || refacciones.length === 0) {
+      console.log('⚠️ No hay refacciones disponibles')
+      return []
+    }
     
-    return refacciones
+    const stockBajo = refacciones
       .filter(refaccion => {
-        const stockMin = parseFloat(refaccion.stockMinimo || 0)
         const stockActual = parseFloat(refaccion.stockActual || 0)
-        return stockActual <= stockMin && stockMin > 0
+        // Stock bajo es cuando tiene menos de 5 unidades
+        return stockActual < 5
       })
       .map(refaccion => ({
         nombre: refaccion.nombre || refaccion.descripcion || 'Sin nombre',
         stock: parseFloat(refaccion.stockActual || 0),
-        minimo: parseFloat(refaccion.stockMinimo || 0)
+        minimo: 5 // Umbral fijo de stock bajo
       }))
       .slice(0, 10)
+    
+    console.log(`📊 Refacciones con stock bajo (< 5):`, stockBajo.length, stockBajo)
+    return stockBajo
   }
 
   // Calcular estadísticas
@@ -487,7 +514,7 @@ export default function GraficosPage() {
       .filter(f => f.estatus === 'PENDIENTE')
       .reduce((sum, f) => sum + parseFloat(f.monto || 0), 0),
     refaccionesStockBajo: refaccionesArray.filter(r => 
-      parseFloat(r.stockActual || 0) <= parseFloat(r.stockMinimo || 0) && parseFloat(r.stockMinimo || 0) > 0
+      parseFloat(r.stockActual || 0) < 5
     ).length
   }
 
@@ -1199,13 +1226,13 @@ export default function GraficosPage() {
 
         {/* Gráficos de Refacciones */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Refacciones por categoría */}
+          {/* Refacciones por nivel de stock */}
           {canViewChart(userRole, 'refacciones-categoria') && (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Refacciones por Categoría</h3>
-                <p className="text-sm text-slate-600">Distribución del inventario</p>
+                <h3 className="text-lg font-bold text-slate-900">Refacciones por Nivel de Stock</h3>
+                <p className="text-sm text-slate-600">Clasificación por cantidad disponible</p>
               </div>
               <PieChartIcon className="h-6 w-6 text-rose-600" />
             </div>

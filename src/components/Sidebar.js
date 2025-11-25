@@ -60,7 +60,7 @@ const menuItems = [
         title: 'Bitácora',
         icon: FileText,
         children: [
-            { title: 'Bitácora de viaje', href: '/dashboard/bitacora' },
+            { title: 'Bitácora general de viajes', href: '/dashboard/bitacora' },
         ]
     },
     {
@@ -80,13 +80,10 @@ const menuItems = [
         ]
     },
     {
-        title: 'Mantenimiento',
-        icon: ToolCase,
+        title: 'Unidades',
+        icon: Truck,
         children: [
-            { title: 'Renovación de seguros', href: '/dashboard/licenses' },
-            { title: 'Mantenimiento proveedor', href: '/dashboard/maintenance' },
-            { title: 'Mantenimiento unidad', href: '/dashboard/unidades' },
-
+            { title: 'Registro', href: '/dashboard/unidades' }
         ]
     },
     {
@@ -102,8 +99,7 @@ const menuItems = [
         title: 'Gastos',
         icon: CreditCard,
         children: [
-            { title: 'Gastos operativos', href: '/dashboard/insurance' },
-            { title: 'Gastos administrativos', href: '/dashboard/gastos' },
+            { title: 'Gastos administrativos y operativos', href: '/dashboard/gastos' },
 
         ]
     },
@@ -112,7 +108,7 @@ const menuItems = [
         icon: DollarSign,
         href: '/dashboard/resumen-gastos',
     },
-       {
+    {
         title: 'Histórico',
         icon: BarChart,
         href: '/dashboard/historico',

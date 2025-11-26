@@ -67,7 +67,7 @@ const EditUserModal = ({ isOpen, onClose, onSave, user, roles }) => {
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Email *
               </label>
@@ -80,20 +80,6 @@ const EditUserModal = ({ isOpen, onClose, onSave, user, roles }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nueva contraseña
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
-                placeholder="Dejar vacío para mantener actual"
-                minLength={6}
-              />
-              <p className="text-xs text-slate-500 mt-1">Dejar vacío si no deseas cambiar la contraseña</p>
-            </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">

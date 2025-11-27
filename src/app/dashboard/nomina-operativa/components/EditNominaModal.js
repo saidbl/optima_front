@@ -1,0 +1,459 @@
+import { useState, useEffect } from 'react'
+import { X, Save, User, Calendar, DollarSign, Hash, FileText, AlertCircle, CreditCard } from 'lucide-react'
+
+const EditNominaModal = ({ isOpen, onClose, onSubmit, nomina, operadores }) => {
+    const [formData, setFormData] = useState({
+        operadorId: '',
+        periodoInicio: '',
+        periodoFin: '',
+        sueldoBase: '',
+        comisionViajes: '',
+        bono: '',
+        compensacion: '',
+        descuentos: '',
+        numeroViajes: '',
+        nombre: '',
+        alias: '',
+        cuenta: '',
+        observaciones: '',
+        creadoPor: 1
+    })
+
+    const [errors, setErrors] = useState({})
+    const [total, setTotal] = useState(0)
+
+    useEffect(() => {
+        if (isOpen && nomina) {
+            setFormData({
+                operadorId: nomina.operadorId || '',
+                periodoInicio: nomina.periodoInicio || '',
+                periodoFin: nomina.periodoFin || '',
+                sueldoBase: nomina.sueldoBase || '',
+                comisionViajes: nomina.comisionViajes || '',
+                bono: nomina.bono || '',
+                compensacion: nomina.compensacion || '',
+                descuentos: nomina.descuentos || '',
+                numeroViajes: nomina.numeroViajes || '',
+                nombre: nomina.nombre || '',
+                alias: nomina.alias || '',
+                cuenta: nomina.cuenta || '',
+                observaciones: nomina.observaciones || '',
+                creadoPor: nomina.creadoPor || 1
+            })
+            setErrors({})
+        }
+    }, [isOpen, nomina])
+
+    // Calcular total automáticamente
+    useEffect(() => {
+        const sueldoBase = parseFloat(formData.sueldoBase) || 0
+        const comisionViajes = parseFloat(formData.comisionViajes) || 0
+        const bono = parseFloat(formData.bono) || 0
+        const compensacion = parseFloat(formData.compensacion) || 0
+        const descuentos = parseFloat(formData.descuentos) || 0
+
+        const totalCalculado = sueldoBase + comisionViajes + bono + compensacion - descuentos
+        setTotal(totalCalculado)
+    }, [formData.sueldoBase, formData.comisionViajes, formData.bono, formData.compensacion, formData.descuentos])
+
+    const validate = () => {
+        const newErrors = {}
+
+        if (!formData.operadorId) {
+            newErrors.operadorId = 'Debe seleccionar un operador'
+        }
+
+        if (!formData.periodoInicio) {
+            newErrors.periodoInicio = 'La fecha de inicio es requerida'
+        }
+
+        if (!formData.periodoFin) {
+            newErrors.periodoFin = 'La fecha de fin es requerida'
+        }
+
+        if (formData.periodoInicio && formData.periodoFin && formData.periodoInicio > formData.periodoFin) {
+            newErrors.periodoFin = 'La fecha de fin debe ser posterior a la de inicio'
+        }
+
+        if (!formData.sueldoBase) {
+            newErrors.sueldoBase = 'El sueldo base es requerido'
+        } else if (parseFloat(formData.sueldoBase) < 0) {
+            newErrors.sueldoBase = 'El sueldo base debe ser mayor o igual a 0'
+        }
+
+        if (!formData.nombre.trim()) {
+            newErrors.nombre = 'El nombre es requerido'
+        }
+
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        setFormData(prev => ({ ...prev, [name]: value }))
+
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }))
+        }
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        if (!validate()) {
+            return
+        }
+
+        const nominaData = {
+            operadorId: parseInt(formData.operadorId),
+            periodoInicio: formData.periodoInicio,
+            periodoFin: formData.periodoFin,
+            sueldoBase: parseFloat(formData.sueldoBase),
+            comisionViajes: parseFloat(formData.comisionViajes) || 0,
+            bono: parseFloat(formData.bono) || 0,
+            compensacion: parseFloat(formData.compensacion) || 0,
+            descuentos: parseFloat(formData.descuentos) || 0,
+            numeroViajes: parseInt(formData.numeroViajes) || 0,
+            nombre: formData.nombre.trim(),
+            alias: formData.alias.trim(),
+            cuenta: formData.cuenta.trim(),
+            observaciones: formData.observaciones.trim(),
+            creadoPor: formData.creadoPor
+        }
+
+        await onSubmit(nomina.id, nominaData)
+    }
+
+    if (!isOpen || !nomina) return null
+
+    return (
+        <div className="fixed inset-0 backdrop-blur-xs bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="sticky top-0 bg-white p-6 border-b border-slate-200 z-10">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-900">Editar Nómina Operativa</h2>
+                            <p className="text-sm text-slate-600 mt-1">Actualizar información de la nómina</p>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                            <X className="h-5 w-5 text-slate-600" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Operador */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Operador <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <select
+                                name="operadorId"
+                                value={formData.operadorId}
+                                onChange={handleChange}
+                                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none ${errors.operadorId ? 'border-red-300' : 'border-slate-300'
+                                    }`}
+                            >
+                                <option value="">Seleccionar operador...</option>
+                                {operadores.map((operador) => (
+                                    <option key={operador.id} value={operador.id}>
+                                        {operador.nombre} {operador.alias ? `(${operador.alias})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {errors.operadorId && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>{errors.operadorId}</span>
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Periodo */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Periodo Inicio <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="date"
+                                    name="periodoInicio"
+                                    value={formData.periodoInicio}
+                                    onChange={handleChange}
+                                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${errors.periodoInicio ? 'border-red-300' : 'border-slate-300'
+                                        }`}
+                                />
+                            </div>
+                            {errors.periodoInicio && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span>{errors.periodoInicio}</span>
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Periodo Fin <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="date"
+                                    name="periodoFin"
+                                    value={formData.periodoFin}
+                                    onChange={handleChange}
+                                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${errors.periodoFin ? 'border-red-300' : 'border-slate-300'
+                                        }`}
+                                />
+                            </div>
+                            {errors.periodoFin && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span>{errors.periodoFin}</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Datos del Operador */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Nombre <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="nombre"
+                                value={formData.nombre}
+                                onChange={handleChange}
+                                placeholder="Nombre completo"
+                                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${errors.nombre ? 'border-red-300' : 'border-slate-300'
+                                    }`}
+                            />
+                            {errors.nombre && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span>{errors.nombre}</span>
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Alias
+                            </label>
+                            <input
+                                type="text"
+                                name="alias"
+                                value={formData.alias}
+                                onChange={handleChange}
+                                placeholder="Alias del operador"
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Cuenta Bancaria
+                            </label>
+                            <div className="relative">
+                                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="text"
+                                    name="cuenta"
+                                    value={formData.cuenta}
+                                    onChange={handleChange}
+                                    placeholder="Número de cuenta"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Montos */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Sueldo Base <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="sueldoBase"
+                                    value={formData.sueldoBase}
+                                    onChange={handleChange}
+                                    placeholder="8000.00"
+                                    step="0.01"
+                                    min="0"
+                                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${errors.sueldoBase ? 'border-red-300' : 'border-slate-300'
+                                        }`}
+                                />
+                            </div>
+                            {errors.sueldoBase && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span>{errors.sueldoBase}</span>
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Comisión por Viajes
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="comisionViajes"
+                                    value={formData.comisionViajes}
+                                    onChange={handleChange}
+                                    placeholder="3500.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Bonos
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="bono"
+                                    value={formData.bono}
+                                    onChange={handleChange}
+                                    placeholder="500.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Compensación
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="compensacion"
+                                    value={formData.compensacion}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Descuentos
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="descuentos"
+                                    value={formData.descuentos}
+                                    onChange={handleChange}
+                                    placeholder="200.00"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Número de Viajes
+                            </label>
+                            <div className="relative">
+                                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                <input
+                                    type="number"
+                                    name="numeroViajes"
+                                    value={formData.numeroViajes}
+                                    onChange={handleChange}
+                                    placeholder="12"
+                                    min="0"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Total Calculado */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-slate-700">Total Neto:</span>
+                            <span className="text-2xl font-bold text-blue-600">
+                                ${total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Observaciones */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Observaciones
+                        </label>
+                        <div className="relative">
+                            <FileText className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <textarea
+                                name="observaciones"
+                                value={formData.observaciones}
+                                onChange={handleChange}
+                                placeholder="Notas adicionales sobre esta nómina..."
+                                rows="3"
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex space-x-3 pt-4 border-t border-slate-200">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                        >
+                            <Save className="h-4 w-4" />
+                            <span>Actualizar Nómina</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+export default EditNominaModal

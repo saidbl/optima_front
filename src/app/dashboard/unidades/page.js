@@ -127,7 +127,8 @@ const UnidadesPage = () => {
   const calculateStats = () => {
     // Asegurarse de que unidades sea un array
     const unidadesArray = Array.isArray(unidades) ? unidades : []
-    const totalUnidades = unidadesArray.length
+    // Usar totalElements si está disponible (viene de la API), si no usar la longitud del array
+    const totalUnidades = totalElements || unidadesArray.length
     const activas = unidadesArray.filter(u => u.estado === 'ACTIVA').length
     const enMantenimiento = unidadesArray.filter(u => u.estado === 'MANTENIMIENTO').length
     const inactivas = unidadesArray.filter(u => u.estado === 'INACTIVA').length

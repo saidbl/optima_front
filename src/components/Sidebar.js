@@ -48,6 +48,7 @@ const availablePages = [
     '/dashboard/almacen/mantenimiento',
     '/dashboard/resumen-gastos',
     '/dashboard/historico',
+    '/dashboard/nomina-operativa',
 ]
 
 const menuItems = [
@@ -67,8 +68,8 @@ const menuItems = [
         title: 'Nómina',
         icon: Coins,
         children: [
-            { title: 'Nómina operativa', href: '/dashboard/pagoss' },
-            { title: 'Nómina fija', href: '/dashboard/pagoss' }
+            { title: 'Nómina operativa', href: '/dashboard/nomina-operativa' },
+            { title: 'Nómina fija', href: '/dashboard/nomina-fija' },
         ]
     },
     {

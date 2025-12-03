@@ -466,7 +466,7 @@ const Dashboard = () => {
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {canViewDashboardElement(userRole, 'stat-viajes-activos') && (
           <StatCard
             title="Viajes Activos"
@@ -476,24 +476,6 @@ const Dashboard = () => {
             icon={Truck}
             color="bg-blue-600"
             description="En curso actualmente"
-          />
-        )}
-        {canViewDashboardElement(userRole, 'stat-gastos-mes') && (
-          <StatCard
-            title="Gastos del Mes"
-            value={`$${(stats.monthlyExpenses / 1000).toFixed(1)}K`}
-            icon={TrendingDown}
-            color="bg-red-600"
-            description="Total de gastos operativos"
-          />
-        )}
-        {canViewDashboardElement(userRole, 'stat-ingresos-mes') && (
-          <StatCard
-            title="Ingresos del Mes"
-            value={`$${(stats.monthlyRevenue / 1000).toFixed(1)}K`}
-            icon={DollarSign}
-            color="bg-purple-600"
-            description="Utilidad neta del mes"
           />
         )}
         {canViewDashboardElement(userRole, 'stat-viajes-completados') && (

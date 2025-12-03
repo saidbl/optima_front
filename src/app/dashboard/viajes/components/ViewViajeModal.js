@@ -107,15 +107,19 @@ const ViewViajeModal = ({ isOpen, onClose, viaje, operadores = [], clientes = []
 
   let unidadModelo = 'No disponible'
   let unidadPlacas = null
-  if (viaje.unidad?.modelo) {
-    unidadModelo = viaje.unidad.modelo
+  let unidadEconomico = null
+
+  if (viaje.unidad) {
+    unidadModelo = viaje.unidad.modelo || 'No disponible'
     unidadPlacas = viaje.unidad.placas
+    unidadEconomico = viaje.unidad.numeroEconomico
   } else if (viaje.idUnidad) {
     const unidad = unidades.find(un => un.id === viaje.idUnidad)
     unidadModelo = unidad?.modelo || 'No disponible'
     unidadPlacas = unidad?.placas
+    unidadEconomico = unidad?.numeroEconomico
   }
-  
+
   // Los campos de ruta, tarifa y distancia vienen directamente en el viaje
   const distanciaKm = viaje.distanciaKm || 'N/A'
   const tarifa = viaje.tarifa || 'N/A'
@@ -220,10 +224,13 @@ const ViewViajeModal = ({ isOpen, onClose, viaje, operadores = [], clientes = []
                   <label className="text-xs font-medium text-purple-700">Unidad</label>
                 </div>
                 <p className="text-sm font-semibold text-slate-900">
-                  {unidadModelo}
+                  {unidadEconomico ? `Eco: ${unidadEconomico}` : unidadModelo}
                 </p>
                 {unidadPlacas && (
                   <p className="text-xs text-slate-600 mt-1">Placas: {unidadPlacas}</p>
+                )}
+                {unidadModelo && unidadEconomico && (
+                  <p className="text-xs text-slate-600">Modelo: {unidadModelo}</p>
                 )}
               </div>
             </div>

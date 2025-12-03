@@ -647,7 +647,7 @@ export default function GraficosPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6 mb-6 lg:mb-8">
           {canViewStatCard(userRole, 'total-viajes') && (
             <StatCard
               title="Total de viajes"
@@ -663,15 +663,6 @@ export default function GraficosPage() {
               value={stats.viajesActivos}
               icon={Activity}
               color="bg-orange-600"
-            />
-          )}
-          {canViewStatCard(userRole, 'gastos-totales') && (
-            <StatCard
-              title="Gastos totales"
-              value={`$${stats.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`}
-              icon={DollarSign}
-              color="bg-red-600"
-              trend={-3.2}
             />
           )}
           {canViewStatCard(userRole, 'unidades-activas') && (

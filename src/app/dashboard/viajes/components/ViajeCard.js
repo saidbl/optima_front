@@ -22,6 +22,7 @@ const ESTADOS = {
   PENDIENTE: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   EN_CURSO: { label: 'En curso', color: 'bg-blue-100 text-blue-800', icon: Navigation },
   COMPLETADO: { label: 'Completado', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  FINALIZADO: { label: 'Finalizado', color: 'bg-teal-100 text-teal-800', icon: CheckCircle },
   CANCELADO: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: XCircle },
   RECHAZADO: { label: 'Rechazado', color: 'bg-orange-100 text-orange-800', icon: XCircle }
 }
@@ -66,7 +67,7 @@ const ViajeCard = ({ viaje, onEdit, onDelete, onViewDetails, operadores, cliente
   const operadorNombre = viaje.operador?.nombre || 'No asignado'
   const clienteNombre = viaje.cliente?.nombre || 'No asignado'
   const unidadPlacas = viaje.unidad?.placas || viaje.unidad?.numeroEconomico || 'No asignada'
-  
+
   // Obtener origen y destino de la ruta si existe
   const origen = viaje.ruta?.origen || viaje.origen || 'N/A'
   const destino = viaje.ruta?.destino || viaje.destino || 'N/A'
@@ -120,7 +121,7 @@ const ViajeCard = ({ viaje, onEdit, onDelete, onViewDetails, operadores, cliente
                   <Eye className="h-4 w-4 mr-3 text-slate-400" />
                   Ver detalles
                 </button>
-                
+
                 {/* Solo ADMIN puede editar y eliminar */}
                 {isAdmin && (
                   <>
@@ -160,17 +161,18 @@ const ViajeCard = ({ viaje, onEdit, onDelete, onViewDetails, operadores, cliente
           <select
             value={viaje.estado}
             onChange={handleEstadoChange}
-            className={`w-full px-3 py-2 rounded-lg border-2 transition-all font-medium text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              viaje.estado === 'PENDIENTE' ? 'border-yellow-200 bg-yellow-50 text-yellow-800' :
-              viaje.estado === 'EN_CURSO' ? 'border-blue-200 bg-blue-50 text-blue-800' :
-              viaje.estado === 'COMPLETADO' ? 'border-green-200 bg-green-50 text-green-800' :
-              viaje.estado === 'RECHAZADO' ? 'border-orange-200 bg-orange-50 text-orange-800' :
-              'border-red-200 bg-red-50 text-red-800'
-            }`}
+            className={`w-full px-3 py-2 rounded-lg border-2 transition-all font-medium text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${viaje.estado === 'PENDIENTE' ? 'border-yellow-200 bg-yellow-50 text-yellow-800' :
+                viaje.estado === 'EN_CURSO' ? 'border-blue-200 bg-blue-50 text-blue-800' :
+                  viaje.estado === 'COMPLETADO' ? 'border-green-200 bg-green-50 text-green-800' :
+                    viaje.estado === 'FINALIZADO' ? 'border-teal-200 bg-teal-50 text-teal-800' :
+                      viaje.estado === 'RECHAZADO' ? 'border-orange-200 bg-orange-50 text-orange-800' :
+                        'border-red-200 bg-red-50 text-red-800'
+              }`}
           >
             <option value="PENDIENTE">Pendiente</option>
             <option value="EN_CURSO">En curso</option>
             <option value="COMPLETADO">Completado</option>
+            <option value="FINALIZADO">Finalizado</option>
             <option value="RECHAZADO">Rechazado</option>
             <option value="CANCELADO">Cancelado</option>
           </select>

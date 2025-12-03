@@ -172,7 +172,7 @@ export default function NominaFijaPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 <StatCard
                     title="Total Nóminas"
                     value={stats.total}
@@ -181,32 +181,11 @@ export default function NominaFijaPage() {
                     description="Registros totales"
                 />
                 <StatCard
-                    title="Personas"
-                    value={stats.personas}
-                    icon={Users}
-                    color="blue"
-                    description="Con nóminas registradas"
-                />
-                <StatCard
                     title="Total Pagado"
                     value={`$${stats.totalPagado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                     icon={DollarSign}
                     color="green"
                     description="Suma de todas las nóminas"
-                />
-                <StatCard
-                    title="Total Extras"
-                    value={`$${stats.totalExtras.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-                    icon={TrendingUp}
-                    color="orange"
-                    description="Suma de todos los extras"
-                />
-                <StatCard
-                    title="Promedio por Nómina"
-                    value={`$${stats.promedioPorNomina.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-                    icon={Calendar}
-                    color="cyan"
-                    description="Promedio de pago"
                 />
             </div>
 

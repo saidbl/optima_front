@@ -76,7 +76,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
         const response = await tarifasComisionesService.getRutasComisionesByCliente(formData.idCliente, 0, 100)
         const rutas = response.content || response || []
         setRutasDisponibles(rutas)
-        
+
         // Mostrar mensaje si no hay rutas
         if (rutas.length === 0) {
           toast.info('Este cliente no tiene rutas configuradas')
@@ -149,7 +149,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
     const litros = parseFloat(formData.dieselLitros) || 0
     const precioPorLitro = parseFloat(formData.dieselPrecioPorLitro) || 0
     const costoTotal = litros * precioPorLitro
-    
+
     setFormData(prev => ({
       ...prev,
       dieselCostoTotal: costoTotal > 0 ? costoTotal.toFixed(2) : ''
@@ -162,9 +162,9 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
     const dieselCostoTotal = parseFloat(formData.dieselCostoTotal) || 0
     const comisionOperador = parseFloat(formData.comisionOperador) || 0
     const gastosExtras = parseFloat(formData.gastosExtras) || 0
-    
+
     const total = casetas + dieselCostoTotal + comisionOperador + gastosExtras
-    
+
     setFormData(prev => ({
       ...prev,
       costoTotal: total > 0 ? total.toFixed(2) : ''
@@ -200,7 +200,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
     if (formData.fechaSalida && formData.fechaEstimadaLlegada) {
       const fechaSalida = new Date(formData.fechaSalida)
       const fechaLlegada = new Date(formData.fechaEstimadaLlegada)
-      
+
       if (fechaLlegada < fechaSalida) {
         newErrors.fechaEstimadaLlegada = 'La fecha de llegada no puede ser anterior a la fecha de salida'
       }
@@ -214,7 +214,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
     }
 
     setErrors(newErrors)
-    
+
     return Object.keys(newErrors).length === 0
   }
 
@@ -256,10 +256,10 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
         costoTotal: formData.costoTotal ? parseFloat(formData.costoTotal) : null,
         folio: formData.folio || null
       }
-      
+
       // Pasar el archivo como segundo parámetro
       await onSave(viajeData, archivo)
-      
+
       setFormData({
         idUnidad: '',
         idOperador: '',
@@ -293,6 +293,8 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
       setIsLoading(false)
     }
   }
+
+  const selectedUnidad = unidades?.find(u => u.id === parseInt(formData.idUnidad))
 
   if (!isOpen) return null
 
@@ -338,8 +340,8 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                 <select
                   value={formData.idCliente}
                   onChange={(e) => {
-                    setFormData({ 
-                      ...formData, 
+                    setFormData({
+                      ...formData,
                       idCliente: e.target.value,
                       idRutaComisiones: '' // Resetear ruta al cambiar cliente
                     })
@@ -373,6 +375,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                     </option>
                   ))}
                 </select>
+                
               </div>
             </div>
           </div>
@@ -424,10 +427,10 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                   disabled={!formData.idCliente || loadingRutas}
                 >
                   <option value="">
-                    {!formData.idCliente 
-                      ? 'Primero selecciona un cliente' 
-                      : loadingRutas 
-                        ? 'Cargando rutas...' 
+                    {!formData.idCliente
+                      ? 'Primero selecciona un cliente'
+                      : loadingRutas
+                        ? 'Cargando rutas...'
                         : 'Selecciona una ruta'}
                   </option>
                   {rutasDisponibles.map((ruta) => (
@@ -437,8 +440,8 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                   ))}
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
-                  {rutasDisponibles.length > 0 
-                    ? `${rutasDisponibles.length} ruta(s) disponible(s)` 
+                  {rutasDisponibles.length > 0
+                    ? `${rutasDisponibles.length} ruta(s) disponible(s)`
                     : formData.idCliente ? 'No hay rutas disponibles para este cliente' : 'Selecciona un cliente para ver rutas'}
                 </p>
               </div>
@@ -510,11 +513,10 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                     setFormData({ ...formData, fechaSalida: e.target.value })
                     if (errors.fechaSalida) setErrors({ ...errors, fechaSalida: '' })
                   }}
-                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                    errors.fechaSalida 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.fechaSalida
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                 />
                 {errors.fechaSalida && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -535,11 +537,10 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                     setFormData({ ...formData, fechaEstimadaLlegada: e.target.value })
                     if (errors.fechaEstimadaLlegada) setErrors({ ...errors, fechaEstimadaLlegada: '' })
                   }}
-                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                    errors.fechaEstimadaLlegada 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.fechaEstimadaLlegada
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                 />
                 {errors.fechaEstimadaLlegada && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -568,11 +569,10 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                     setFormData({ ...formData, cargaDescripcion: e.target.value })
                     if (errors.cargaDescripcion) setErrors({ ...errors, cargaDescripcion: '' })
                   }}
-                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${
-                    errors.cargaDescripcion 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.cargaDescripcion
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   placeholder="Descripción detallada de la carga..."
                   rows={3}
                 />
@@ -716,7 +716,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                   placeholder="Se calcula automáticamente"
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  {formData.dieselLitros && formData.dieselPrecioPorLitro 
+                  {formData.dieselLitros && formData.dieselPrecioPorLitro
                     ? `${formData.dieselLitros} L × $${formData.dieselPrecioPorLitro} = $${formData.dieselCostoTotal}`
                     : 'Ingresa litros y precio para calcular'}
                 </p>
@@ -749,7 +749,7 @@ const CreateViajeModal = ({ isOpen, onClose, onSave, operadores, clientes, unida
                   className="w-full px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-slate-900 font-semibold cursor-not-allowed"
                   placeholder="0.00"
                 />
-                
+
               </div>
             </div>
           </div>

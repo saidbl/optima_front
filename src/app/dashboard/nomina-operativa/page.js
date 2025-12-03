@@ -207,7 +207,7 @@ export default function NominaOperativaPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 <StatCard
                     title="Total Nóminas"
                     value={stats.total}
@@ -216,32 +216,11 @@ export default function NominaOperativaPage() {
                     description="Registros totales"
                 />
                 <StatCard
-                    title="Operadores"
-                    value={stats.operadores}
-                    icon={Users}
-                    color="purple"
-                    description="Con nóminas registradas"
-                />
-                <StatCard
                     title="Total Pagado"
                     value={`$${stats.totalPagado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                     icon={DollarSign}
                     color="green"
                     description="Suma de todas las nóminas"
-                />
-                <StatCard
-                    title="Viajes Totales"
-                    value={stats.totalViajes}
-                    icon={TrendingUp}
-                    color="orange"
-                    description="Suma de todos los viajes"
-                />
-                <StatCard
-                    title="Promedio por Nómina"
-                    value={`$${stats.promedioPorNomina.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-                    icon={Calendar}
-                    color="cyan"
-                    description="Promedio de pago"
                 />
             </div>
 

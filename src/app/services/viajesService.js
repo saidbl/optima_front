@@ -246,57 +246,7 @@ export const viajesService = {
     try {
       console.log('🔄 Cambiar estado:', { id, nuevoEstado, tieneArchivo: !!archivo, fechaRealLlegada })
 
-      // Si hay archivo, siempre usar el endpoint de completar (que maneja la evidencia)
-      // independientemente del estado
-      if (archivo) {
-        console.log('📸 Subiendo evidencia con cambio de estado...')
-        // El endpoint /completar maneja la subida de evidencia Y cambia el estado a COMPLETADO
-        // Pero nosotros queremos cambiar a cualquier estado, así que:
-        // 1. Subimos la evidencia
-        const result = await this.completarViaje(id, archivo)
-
-        // 2. Si el estado deseado NO es COMPLETADO o hay fechaRealLlegada, hacemos otro update
-        if (nuevoEstado !== 'COMPLETADO' || fechaRealLlegada) {
-          console.log(`📝 Cambiando estado a ${nuevoEstado} después de subir evidencia...`)
-          // Obtener el viaje actual para mantener los datos originales
-          const viaje = await this.getViajeById(id)
-
-          // Construir el DTO exactamente como lo requiere el backend
-          const dto = {
-            unidadId: viaje.unidad?.id || viaje.idUnidad,
-            operadorId: viaje.operador?.id || viaje.idOperador,
-            clienteId: viaje.cliente?.id || viaje.idCliente,
-            origen: viaje.origen,
-            destino: viaje.destino,
-            fechaSalida: viaje.fechaSalida,
-            fechaEstimadaLlegada: viaje.fechaEstimadaLlegada,
-            fechaRealLlegada: fechaRealLlegada || viaje.fechaRealLlegada || null,
-            estado: nuevoEstado,
-            cargaDescripcion: viaje.cargaDescripcion,
-            tarifa: viaje.tarifa,
-            distanciaKm: viaje.distanciaKm,
-            tipoViaje: viaje.tipo || viaje.tipoViaje,
-            folio: viaje.folio
-          }
-
-          // Crear FormData con dto y archivo (aunque archivo ya se subió, el backend puede requerirlo)
-          const formData = new FormData()
-          const dtoBlob = new Blob([JSON.stringify(dto)], { type: 'application/json' })
-          formData.append('dto', dtoBlob)
-          // El archivo ya se subió en el paso anterior, aquí solo actualizamos el estado
-
-          return await apiClient.put(`/api/viajes/${id}`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          }).then(res => res.data)
-        }
-
-        return result
-      }
-
-      // Para otros estados sin archivo, hacer un simple cambio de estado
-      console.log('📝 Actualizando estado sin evidencia...')
+      // Obtener el viaje actual para mantener los datos originales
       const viaje = await this.getViajeById(id)
 
       // Construir el DTO exactamente como lo requiere el backend
@@ -317,10 +267,35 @@ export const viajesService = {
         folio: viaje.folio
       }
 
-      // Crear FormData con dto (sin archivo)
+      // Crear FormData con dto y archivo opcional
       const formData = new FormData()
       const dtoBlob = new Blob([JSON.stringify(dto)], { type: 'application/json' })
       formData.append('dto', dtoBlob)
+
+      if (archivo) {
+        // Validar tipos de archivo permitidos
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'application/pdf', 'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain', 'text/csv'
+        ]
+
+        if (!allowedTypes.includes(archivo.type)) {
+          throw new Error('Formato no permitido. Puedes subir imágenes, PDF, Word, Excel, TXT o CSV')
+        }
+
+        // Validar tamaño máximo (1MB estricto)
+        const maxSize = 1 * 1024 * 1024 // 1MB
+        if (archivo.size > maxSize) {
+          const sizeMB = (archivo.size / 1024 / 1024).toFixed(2)
+          throw new Error(`⚠️ El archivo (${sizeMB}MB) supera el límite de 1MB permitido por el servidor.`)
+        }
+
+        formData.append('archivo', archivo)
+      }
 
       const response = await apiClient.put(`/api/viajes/${id}`, formData, {
         headers: {

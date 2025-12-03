@@ -40,7 +40,9 @@ const ESTADOS = {
   PENDIENTE: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   EN_CURSO: { label: 'En curso', color: 'bg-blue-100 text-blue-800', icon: Navigation },
   COMPLETADO: { label: 'Completado', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  CANCELADO: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: XCircle }
+  FINALIZADO: { label: 'Finalizado', color: 'bg-teal-100 text-teal-800', icon: CheckCircle },
+  CANCELADO: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: XCircle },
+  RECHAZADO: { label: 'Rechazado', color: 'bg-orange-100 text-orange-800', icon: XCircle }
 }
 
 const TIPOS_VIAJE = {
@@ -67,6 +69,10 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
       }
     }
   }, [previewUrl])
+
+  // Determinar requerimientos según el estado
+  const requiereEvidencia = ['FINALIZADO', 'RECHAZADO'].includes(nuevoEstado)
+  const requiereFecha = ['COMPLETADO', 'RECHAZADO'].includes(nuevoEstado)
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0]
@@ -129,12 +135,15 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
 
     const sizeMB = selectedFile ? (selectedFile.size / 1024 / 1024).toFixed(2) : 'N/A'
 
+    // Validación de evidencia requerida
+    if (requiereEvidencia && !selectedFile) {
+      toast.error('⚠️ Se requiere archivo de evidencia para este estado')
+      return
+    }
 
-
-
-    // Si el estado es RECHAZADO, requiere fecha real de llegada
-    if (nuevoEstado === 'RECHAZADO' && !fechaRealLlegada) {
-      toast.error('⚠️ Se requiere la fecha real de llegada para rechazar el viaje')
+    // Validación de fecha requerida
+    if (requiereFecha && !fechaRealLlegada) {
+      toast.error('⚠️ Se requiere la fecha real de llegada')
       return
     }
 
@@ -151,6 +160,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
     }
 
     setUploading(true)
+    const loadingToast = toast.loading('Procesando cambio de estado...')
 
     try {
 
@@ -161,6 +171,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
         'EN_CURSO': 'en curso',
         'EN_PROCESO': 'en proceso',
         'COMPLETADO': 'completado',
+        'FINALIZADO': 'finalizado',
         'CANCELADO': 'cancelado',
         'RECHAZADO': 'rechazado'
       }[nuevoEstado] || nuevoEstado.toLowerCase()
@@ -183,7 +194,6 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
         await onSave()
       }
     } catch (error) {
-
       // Determinar el mensaje de error apropiado
       let errorMessage = 'Error al cambiar el estado del viaje'
 
@@ -201,6 +211,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
 
       toast.error(errorMessage, { duration: 6000 })
     } finally {
+      toast.dismiss(loadingToast)
       setUploading(false)
     }
   }
@@ -220,7 +231,6 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
 
   const estadoInfo = ESTADOS[nuevoEstado] || ESTADOS.PENDIENTE
   const EstadoIcon = estadoInfo.icon
-  const requiereEvidencia = false // La evidencia ahora es opcional
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -229,7 +239,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                {requiereEvidencia ? 'Subir archivo de evidencia' : 'Cambiar estado del viaje'}
+                {requiereEvidencia ? 'Subir archivo de evidencia' : 'Confirmar cambio de estado'}
               </h2>
               <p className="text-sm text-slate-600 mt-1">
                 Viaje #{viaje?.id} - Cambio a estado:
@@ -249,96 +259,97 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Área de carga de imagen */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
-              Archivo de evidencia
-              <span className="text-slate-500 text-xs ml-1">(opcional)</span>
-            </label>
+          {/* Área de carga de imagen - Solo si requiere evidencia */}
+          {requiereEvidencia && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-3">
+                Archivo de evidencia *
+              </label>
 
-            {!selectedFile ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer"
-              >
-                <Camera className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 font-medium mb-1">Click para seleccionar un archivo</p>
-                <p className="text-sm text-slate-500">Imágenes, PDF, Word, Excel, TXT o CSV (máx. 1MB)</p>
-                <p className="text-xs text-amber-600 mt-2">Archivos mayores a 1MB serán rechazados</p>
-              </div>
-            ) : (
-              <div className="relative">
-                {/* Preview para imágenes */}
-                {previewUrl ? (
-                  <Image
-                    height={64}
-                    width={64}
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-64 object-cover rounded-xl border-2 border-slate-200"
-                  />
-                ) : (
-                  /* Mostrar icono de documento para archivos no-imagen */
-                  <div className="w-full h-64 flex items-center justify-center bg-slate-100 rounded-xl border-2 border-slate-200">
-                    <div className="text-center">
-                      <FileText className="h-20 w-20 text-slate-400 mx-auto mb-3" />
-                      <p className="text-slate-600 font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-slate-500 mt-1">
-                        {selectedFile.type === 'application/pdf' && 'Documento PDF'}
-                        {selectedFile.type.includes('word') && 'Documento Word'}
-                        {selectedFile.type.includes('excel') && 'Hoja de cálculo Excel'}
-                        {selectedFile.type.includes('text') && 'Archivo de texto'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Información del archivo */}
-                <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
-                  {selectedFile && (
-                    <>
-                      <span className="block truncate max-w-xs">{selectedFile.name}</span>
-                      <span className="block text-green-400">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)}MB / 1MB
-                      </span>
-                    </>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null)
-                    setPreviewUrl(null)
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = ''
-                    }
-                  }}
-                  className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
+              {!selectedFile ? (
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-2 right-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer"
                 >
-                  <Upload className="h-4 w-4" />
-                  <span>Cambiar archivo</span>
-                </button>
-              </div>
-            )}
+                  <Camera className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-600 font-medium mb-1">Click para seleccionar un archivo</p>
+                  <p className="text-sm text-slate-500">Imágenes, PDF, Word, Excel, TXT o CSV (máx. 1MB)</p>
+                  <p className="text-xs text-amber-600 mt-2">Archivos mayores a 1MB serán rechazados</p>
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Preview para imágenes */}
+                  {previewUrl ? (
+                    <Image
+                      height={64}
+                      width={64}
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-full h-64 object-cover rounded-xl border-2 border-slate-200"
+                    />
+                  ) : (
+                    /* Mostrar icono de documento para archivos no-imagen */
+                    <div className="w-full h-64 flex items-center justify-center bg-slate-100 rounded-xl border-2 border-slate-200">
+                      <div className="text-center">
+                        <FileText className="h-20 w-20 text-slate-400 mx-auto mb-3" />
+                        <p className="text-slate-600 font-medium">{selectedFile.name}</p>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {selectedFile.type === 'application/pdf' && 'Documento PDF'}
+                          {selectedFile.type.includes('word') && 'Documento Word'}
+                          {selectedFile.type.includes('excel') && 'Hoja de cálculo Excel'}
+                          {selectedFile.type.includes('text') && 'Archivo de texto'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </div>
+                  {/* Información del archivo */}
+                  <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
+                    {selectedFile && (
+                      <>
+                        <span className="block truncate max-w-xs">{selectedFile.name}</span>
+                        <span className="block text-green-400">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)}MB / 1MB
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ''
+                      }
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Cambiar archivo</span>
+                  </button>
+                </div>
+              )}
 
-          {/* Campo de Fecha Real de Llegada (solo para RECHAZADO) */}
-          {nuevoEstado === 'RECHAZADO' && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </div>
+          )}
+
+          {/* Campo de Fecha Real de Llegada - Solo si requiere fecha */}
+          {requiereFecha && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Fecha Real de Llegada *
@@ -351,7 +362,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
                 required
               />
               <p className="text-xs text-slate-500 mt-1">
-                Indica la fecha real de llegada del viaje (requerido para viajes rechazados)
+                Indica la fecha real de llegada del viaje
               </p>
             </div>
           )}
@@ -383,7 +394,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
             </button>
             <button
               type="submit"
-              disabled={uploading}
+              disabled={uploading || (requiereEvidencia && !selectedFile) || (requiereFecha && !fechaRealLlegada)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {uploading ? (
@@ -393,7 +404,7 @@ const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes
                 </>
               ) : (
                 <>
-                  {selectedFile ? (
+                  {requiereEvidencia ? (
                     <>
                       <Upload className="h-4 w-4" />
                       <span>Subir evidencia</span>
@@ -603,8 +614,8 @@ const ViajesPage = () => {
   }
 
   const handleEstadoChange = async (viaje, nuevoEstado) => {
-    // Solo abrir modal de evidencia para COMPLETADO y RECHAZADO
-    if (nuevoEstado === 'COMPLETADO' || nuevoEstado === 'RECHAZADO') {
+    // Abrir modal para COMPLETADO, FINALIZADO y RECHAZADO
+    if (['COMPLETADO', 'FINALIZADO', 'RECHAZADO'].includes(nuevoEstado)) {
       setSelectedViaje(viaje)
       setNuevoEstado(nuevoEstado)
       setShowEvidenciaModal(true)

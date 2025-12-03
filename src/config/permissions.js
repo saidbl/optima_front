@@ -68,8 +68,7 @@ export const PERMISSIONS = {
       '/dashboard/facturas/extra',
       '/dashboard/gastos',
       '/dashboard/graficos',
-      '/dashboard/operadores',
-      '/dashboard/resumen-gastos',
+      '/dashboard/resumen-gastos'
     ],
     displayName: 'Nomina'
   },
@@ -82,6 +81,7 @@ export const PERMISSIONS = {
       '/dashboard/viajes',
       '/dashboard/monlo',
       '/dashboard/clientes',
+      '/dashboard/operadores',
       '/dashboard/bitacora',
       '/dashboard/unidades',
     ],

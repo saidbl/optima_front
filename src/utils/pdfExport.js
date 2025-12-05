@@ -14,13 +14,13 @@ const addHeader = (doc, title, subtitle = '') => {
   doc.setFontSize(20)
   doc.setTextColor(30, 58, 138) // blue-900
   doc.text(title, 15, 20)
-  
+
   if (subtitle) {
     doc.setFontSize(10)
     doc.setTextColor(100, 116, 139) // slate-500
     doc.text(subtitle, 15, 27)
   }
-  
+
   // Fecha de generación
   const fecha = new Date().toLocaleDateString('es-MX', {
     year: 'numeric',
@@ -39,7 +39,7 @@ const addFooter = (doc) => {
   const pageCount = doc.internal.getNumberOfPages()
   doc.setFontSize(8)
   doc.setTextColor(148, 163, 184)
-  
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
     doc.text(
@@ -60,14 +60,14 @@ const addFooter = (doc) => {
 // Exportar Almacenes
 export const exportAlmacenesPDF = (almacenes, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Almacenes', `Total de almacenes: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Activos: ${stats.activos} | Inactivos: ${stats.inactivos} | Total Refacciones: ${stats.totalRefacciones}`, 15, 40)
-  
+
   // Tabla de almacenes
   const tableData = almacenes.map(almacen => [
     almacen.id,
@@ -78,7 +78,7 @@ export const exportAlmacenesPDF = (almacenes, stats) => {
     almacen.encargado || 'Sin asignar',
     almacen.activo ? 'Activo' : 'Inactivo'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Nombre', 'Ubicación', 'Cap. Máx', 'Cap. Actual', 'Encargado', 'Estado']],
     body: tableData,
@@ -88,7 +88,7 @@ export const exportAlmacenesPDF = (almacenes, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`almacenes_${Date.now()}.pdf`)
 }
@@ -96,14 +96,14 @@ export const exportAlmacenesPDF = (almacenes, stats) => {
 // Exportar Refacciones
 export const exportRefaccionesPDF = (refacciones, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Refacciones', `Total de refacciones: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Stock Bajo: ${stats.stockBajo} | Valor Total: $${stats.valorTotal?.toLocaleString('es-MX') || 0}`, 15, 40)
-  
+
   // Tabla de refacciones
   const tableData = refacciones.map(ref => [
     ref.id,
@@ -115,7 +115,7 @@ export const exportRefaccionesPDF = (refacciones, stats) => {
     ref.almacen?.nombre || 'Sin almacén',
     ref.stockActual < 5 ? 'Crítico' : ref.stockActual < 10 ? 'Bajo' : 'Normal'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Nombre', 'Descripción', 'Stock', 'Unidad', 'Costo', 'Almacén', 'Estado']],
     body: tableData,
@@ -128,7 +128,7 @@ export const exportRefaccionesPDF = (refacciones, stats) => {
       2: { cellWidth: 35 }
     }
   })
-  
+
   addFooter(doc)
   doc.save(`refacciones_${Date.now()}.pdf`)
 }
@@ -136,14 +136,14 @@ export const exportRefaccionesPDF = (refacciones, stats) => {
 // Exportar Clientes
 export const exportClientesPDF = (clientes, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Clientes', `Total de clientes: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Activos: ${stats.activos} | Inactivos: ${stats.inactivos}`, 15, 40)
-  
+
   // Tabla de clientes
   const tableData = clientes.map(cliente => [
     cliente.id,
@@ -154,7 +154,7 @@ export const exportClientesPDF = (clientes, stats) => {
     cliente.direccion || 'N/A',
     cliente.activo ? 'Activo' : 'Inactivo'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Nombre', 'RFC', 'Teléfono', 'Email', 'Dirección', 'Estado']],
     body: tableData,
@@ -164,7 +164,7 @@ export const exportClientesPDF = (clientes, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`clientes_${Date.now()}.pdf`)
 }
@@ -172,14 +172,14 @@ export const exportClientesPDF = (clientes, stats) => {
 // Exportar Operadores
 export const exportOperadoresPDF = (operadores, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Operadores', `Total de operadores: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Activos: ${stats.activos} | Disponibles: ${stats.disponibles}`, 15, 40)
-  
+
   // Tabla de operadores
   const tableData = operadores.map(op => [
     op.id,
@@ -191,7 +191,7 @@ export const exportOperadoresPDF = (operadores, stats) => {
     op.disponible ? 'Disponible' : 'No disponible',
     op.activo ? 'Activo' : 'Inactivo'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Nombre', 'Licencia', 'Teléfono', 'Tipo Lic.', 'Unidad', 'Disponibilidad', 'Estado']],
     body: tableData,
@@ -201,7 +201,7 @@ export const exportOperadoresPDF = (operadores, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`operadores_${Date.now()}.pdf`)
 }
@@ -209,14 +209,14 @@ export const exportOperadoresPDF = (operadores, stats) => {
 // Exportar Unidades
 export const exportUnidadesPDF = (unidades, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Unidades', `Total de unidades: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Activas: ${stats.activas} | Disponibles: ${stats.disponibles} | En mantenimiento: ${stats.mantenimiento}`, 15, 40)
-  
+
   // Tabla de unidades
   const tableData = unidades.map(unidad => [
     unidad.id,
@@ -228,7 +228,7 @@ export const exportUnidadesPDF = (unidades, stats) => {
     unidad.operador?.nombre || 'Sin operador',
     unidad.disponible ? 'Disponible' : 'No disponible'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Placas', 'No. Económico', 'Marca', 'Modelo', 'Año', 'Operador', 'Estado']],
     body: tableData,
@@ -238,7 +238,7 @@ export const exportUnidadesPDF = (unidades, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`unidades_${Date.now()}.pdf`)
 }
@@ -246,29 +246,37 @@ export const exportUnidadesPDF = (unidades, stats) => {
 // Exportar Viajes
 export const exportViajesPDF = (viajes, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Viajes', `Total de viajes: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Completados: ${stats.completados} | En ruta: ${stats.enRuta} | Pendientes: ${stats.pendientes}`, 15, 40)
-  
+
   // Tabla de viajes
-  const tableData = viajes.map(viaje => [
-    viaje.id,
-    viaje.folio || 'N/A',
-    viaje.cliente?.nombre || 'N/A',
-    viaje.origen || 'N/A',
-    viaje.destino || 'N/A',
-    viaje.operador?.nombre || 'N/A',
-    viaje.unidad?.placas || 'N/A',
-    new Date(viaje.fechaSalida).toLocaleDateString('es-MX'),
-    viaje.estatus || 'N/A'
-  ])
-  
+  const tableData = viajes.map(viaje => {
+    // Obtener origen y destino de la ruta o rutaComisiones
+    const origen = viaje.ruta?.origen || viaje.rutaComisiones?.origen || viaje.origen || 'N/A'
+    const destino = viaje.ruta?.destino || viaje.rutaComisiones?.destino || viaje.destino || 'N/A'
+    // Estado puede venir como 'estado' o 'estatus'
+    const estado = viaje.estado || viaje.estatus || 'N/A'
+
+    return [
+      viaje.id,
+      viaje.folio || 'N/A',
+      viaje.cliente?.nombre || 'N/A',
+      origen,
+      destino,
+      viaje.operador?.nombre || 'N/A',
+      viaje.unidad?.numeroEconomico || viaje.unidad?.placas || 'N/A',
+      viaje.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString('es-MX') : 'N/A',
+      estado
+    ]
+  })
+
   autoTable(doc, {
-    head: [['ID', 'Folio', 'Cliente', 'Origen', 'Destino', 'Operador', 'Unidad', 'Fecha', 'Estatus']],
+    head: [['ID', 'Folio', 'Cliente', 'Origen', 'Destino', 'Operador', 'Unidad', 'Fecha', 'Estado']],
     body: tableData,
     startY: 45,
     styles: { fontSize: 7, cellPadding: 2 },
@@ -276,7 +284,7 @@ export const exportViajesPDF = (viajes, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`viajes_${Date.now()}.pdf`)
 }
@@ -284,14 +292,14 @@ export const exportViajesPDF = (viajes, stats) => {
 // Exportar Facturas
 export const exportFacturasPDF = (facturas, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Facturas', `Total de facturas: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Pagadas: ${stats.pagadas} | Pendientes: ${stats.pendientes} | Monto Total: $${stats.totalMonto?.toLocaleString('es-MX') || 0}`, 15, 40)
-  
+
   // Tabla de facturas
   const tableData = facturas.map(factura => [
     factura.id,
@@ -303,7 +311,7 @@ export const exportFacturasPDF = (facturas, stats) => {
     new Date(factura.fechaEmision).toLocaleDateString('es-MX'),
     factura.estatus || 'N/A'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'No. Factura', 'Cliente', 'Monto', 'Pagado', 'Pendiente', 'Fecha', 'Estatus']],
     body: tableData,
@@ -313,7 +321,7 @@ export const exportFacturasPDF = (facturas, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`facturas_${Date.now()}.pdf`)
 }
@@ -321,9 +329,9 @@ export const exportFacturasPDF = (facturas, stats) => {
 // Exportar Gastos Semanales
 export const exportGastosPDF = (gastos, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Gastos Semanales', `Total de registros: ${gastos.length}`)
-  
+
   // Tabla de gastos
   const tableData = gastos.map(gasto => [
     gasto.id,
@@ -335,7 +343,7 @@ export const exportGastosPDF = (gastos, stats) => {
     `$${(gasto.gastosExtras || 0).toLocaleString('es-MX')}`,
     `$${(gasto.totalGastos || 0).toLocaleString('es-MX')}`
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Semana', 'Viajes', 'IAVE', 'Diesel', 'Nómina', 'Extras', 'Total']],
     body: tableData,
@@ -345,7 +353,7 @@ export const exportGastosPDF = (gastos, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`gastos_semanales_${Date.now()}.pdf`)
 }
@@ -353,9 +361,9 @@ export const exportGastosPDF = (gastos, stats) => {
 // Exportar Bitácora
 export const exportBitacoraPDF = (bitacoras) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Bitácora de Viajes', `Total de registros: ${bitacoras.length}`)
-  
+
   // Tabla de bitácora
   const tableData = bitacoras.map(bit => [
     bit.id,
@@ -368,7 +376,7 @@ export const exportBitacoraPDF = (bitacoras) => {
     `$${(bit.gastosExtras || 0).toLocaleString('es-MX')}`,
     `$${(bit.costoTotal || 0).toLocaleString('es-MX')}`
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Folio', 'Operador', 'Unidad', 'Casetas', 'Diesel', 'Comisión', 'Extras', 'Total']],
     body: tableData,
@@ -378,7 +386,7 @@ export const exportBitacoraPDF = (bitacoras) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`bitacora_viajes_${Date.now()}.pdf`)
 }
@@ -386,9 +394,9 @@ export const exportBitacoraPDF = (bitacoras) => {
 // Exportar Mantenimiento
 export const exportMantenimientoPDF = (mantenimientos, almacenNombre) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, `Reporte de Mantenimiento - ${almacenNombre}`, `Total de registros: ${mantenimientos.length}`)
-  
+
   // Tabla de mantenimiento
   const tableData = mantenimientos.map(mant => [
     mant.id,
@@ -400,7 +408,7 @@ export const exportMantenimientoPDF = (mantenimientos, almacenNombre) => {
     mant.responsable || 'N/A',
     mant.observaciones || 'N/A'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Refacción', 'Tipo', 'Cantidad', 'Costo', 'Fecha', 'Responsable', 'Observaciones']],
     body: tableData,
@@ -413,7 +421,7 @@ export const exportMantenimientoPDF = (mantenimientos, almacenNombre) => {
       7: { cellWidth: 40 }
     }
   })
-  
+
   addFooter(doc)
   doc.save(`mantenimiento_${almacenNombre}_${Date.now()}.pdf`)
 }
@@ -421,14 +429,14 @@ export const exportMantenimientoPDF = (mantenimientos, almacenNombre) => {
 // Exportar Facturas Extra
 export const exportFacturasExtraPDF = (facturas, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Reporte de Facturas Extra', `Total de facturas: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Pagadas: ${stats.pagadas} | Pendientes: ${stats.pendientes} | Monto Total: $${stats.totalMonto?.toLocaleString('es-MX') || 0}`, 15, 40)
-  
+
   // Tabla de facturas
   const tableData = facturas.map(factura => [
     factura.id,
@@ -439,7 +447,7 @@ export const exportFacturasExtraPDF = (facturas, stats) => {
     new Date(factura.fechaEmision).toLocaleDateString('es-MX'),
     factura.estatus || 'N/A'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'No. Factura', 'Proveedor', 'Concepto', 'Monto', 'Fecha', 'Estatus']],
     body: tableData,
@@ -449,7 +457,7 @@ export const exportFacturasExtraPDF = (facturas, stats) => {
     alternateRowStyles: { fillColor: [248, 250, 252] },
     margin: { left: 15, right: 15 }
   })
-  
+
   addFooter(doc)
   doc.save(`facturas_extra_${Date.now()}.pdf`)
 }
@@ -457,14 +465,14 @@ export const exportFacturasExtraPDF = (facturas, stats) => {
 // Exportar Histórico de Movimientos
 export const exportHistoricoPDF = (movimientos, stats) => {
   const doc = new jsPDF(commonConfig)
-  
+
   addHeader(doc, 'Histórico de Movimientos de Almacén', `Total de movimientos: ${stats.total}`)
-  
+
   // Estadísticas
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
   doc.text(`Entradas: ${stats.entradas} | Salidas: ${stats.salidas} | Transferencias: ${stats.transferencias}`, 15, 40)
-  
+
   // Tabla de movimientos
   const tableData = movimientos.map(mov => [
     mov.id,
@@ -481,7 +489,7 @@ export const exportHistoricoPDF = (movimientos, stats) => {
     }),
     mov.observaciones || '-'
   ])
-  
+
   autoTable(doc, {
     head: [['ID', 'Tipo', 'Refacción', 'Cantidad', 'Origen', 'Destino', 'Usuario', 'Fecha', 'Observaciones']],
     body: tableData,
@@ -502,7 +510,7 @@ export const exportHistoricoPDF = (movimientos, stats) => {
       8: { cellWidth: 40 }
     }
   })
-  
+
   addFooter(doc)
   doc.save(`historico_movimientos_${Date.now()}.pdf`)
 }

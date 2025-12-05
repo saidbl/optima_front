@@ -9,24 +9,37 @@ import {
   Clock,
   XCircle,
   Filter,
-  Banknote
+  Banknote,
+  FileDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { facturaService } from '@/app/services/facturaService'
 import { clientsService } from '@/app/services/clientsService'
-import { FacturaCard, StatCard, PagarFacturaModal, ViewFacturaModal } from '../facturas/components'
+import { FacturaCard, StatCard, PagarFacturaModal, PagoParcialModal, ViewFacturaModal } from '../facturas/components'
+import { exportFacturasPDF } from '@/utils/pdfExport'
 
 const LiquidacionEfectivoPage = () => {
   const [facturas, setFacturas] = useState([])
+  const [filteredFacturas, setFilteredFacturas] = useState([])
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstatus, setFilterEstatus] = useState('TODAS')
   const [showPagarModal, setShowPagarModal] = useState(false)
+  const [showPagoParcialModal, setShowPagoParcialModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedFactura, setSelectedFactura] = useState(null)
   const [facturaToDelete, setFacturaToDelete] = useState(null)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize] = useState(15)
+
   const [stats, setStats] = useState({
     total: 0,
     pendientes: 0,
@@ -36,34 +49,72 @@ const LiquidacionEfectivoPage = () => {
     montoPendiente: 0
   })
 
-  const loadFacturas = async () => {
+  useEffect(() => {
+    loadInitialData()
+  }, [])
+
+  useEffect(() => {
+    loadFacturas(currentPage)
+  }, [currentPage])
+
+  useEffect(() => {
+    filterFacturasData()
+  }, [searchTerm, filterEstatus, facturas])
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true)
+      await Promise.all([loadFacturas(0), loadClientes()])
+    } catch (error) {
+      console.error('Error loading initial data:', error)
+      toast.error('Error al cargar datos iniciales')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadFacturas = async (page = 0) => {
     try {
       // Obtener facturas de tipo SIN_FACTURA (pagadas en efectivo)
-      const response = await facturaService.getFacturasByTipo('SIN_FACTURA', 0, 100)
-      const facturasData = response.content || []
-      setFacturas(facturasData)
+      const response = await facturaService.getFacturasByTipo('SIN_FACTURA', page, pageSize)
 
-      // Calcular estadísticas
-      const pendientes = facturasData.filter(f => f.estatus === 'PENDIENTE').length
-      const pagadas = facturasData.filter(f => f.estatus === 'PAGADA').length
-      const vencidas = facturasData.filter(f => f.estatus === 'VENCIDA').length
-      const totalMonto = facturasData.reduce((sum, f) => sum + (parseFloat(f.monto) || 0), 0)
-      const montoPendiente = facturasData
-        .filter(f => f.estatus === 'PENDIENTE' || f.estatus === 'VENCIDA')
-        .reduce((sum, f) => sum + (parseFloat(f.monto) || 0), 0)
-
-      setStats({
-        total: response.totalElements || facturasData.length,
-        pendientes,
-        pagadas,
-        vencidas,
-        totalMonto,
-        montoPendiente
-      })
+      if (response.content) {
+        setFacturas(response.content)
+        setTotalPages(response.totalPages)
+        setTotalElements(response.totalElements)
+        setCurrentPage(response.number)
+        updateStats(response.content, response.totalElements)
+      } else {
+        const data = Array.isArray(response) ? response : (response.data || [])
+        setFacturas(data)
+        setTotalPages(1)
+        setTotalElements(data.length)
+        updateStats(data, data.length)
+      }
     } catch (error) {
       console.error('Error loading facturas efectivo:', error)
       toast.error('Error al cargar facturas en efectivo')
+      setFacturas([])
     }
+  }
+
+  const updateStats = (data, total) => {
+    const pendientes = data.filter(f => f.estatus === 'PENDIENTE').length
+    const pagadas = data.filter(f => f.estatus === 'PAGADA').length
+    const vencidas = data.filter(f => f.estatus === 'VENCIDA').length
+    const totalMonto = data.reduce((sum, f) => sum + (parseFloat(f.monto) || 0), 0)
+    const montoPendiente = data
+      .filter(f => f.estatus === 'PENDIENTE' || f.estatus === 'VENCIDA')
+      .reduce((sum, f) => sum + (parseFloat(f.monto) || 0), 0)
+
+    setStats({
+      total: total,
+      pendientes,
+      pagadas,
+      vencidas,
+      totalMonto,
+      montoPendiente
+    })
   }
 
   const loadClientes = async () => {
@@ -76,21 +127,18 @@ const LiquidacionEfectivoPage = () => {
     }
   }
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setLoading(true)
-        await Promise.all([loadFacturas(), loadClientes()])
-      } catch (error) {
-        console.error('Error loading initial data:', error)
-        toast.error('Error al cargar datos iniciales')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const filterFacturasData = () => {
+    const filtered = facturas.filter(factura => {
+      const matchesSearch =
+        factura.numeroFactura?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        factura.observaciones?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    loadInitialData()
-  }, [])
+      const matchesFilter = filterEstatus === 'TODAS' || factura.estatus === filterEstatus
+
+      return matchesSearch && matchesFilter
+    })
+    setFilteredFacturas(filtered)
+  }
 
   const handlePagarFactura = (factura) => {
     setSelectedFactura(factura)
@@ -123,16 +171,63 @@ const LiquidacionEfectivoPage = () => {
 
       setShowPagarModal(false)
       setSelectedFactura(null)
-      loadFacturas()
+      loadFacturas(currentPage)
     } catch (error) {
       toast.error(error.message || 'Error al registrar pago')
       throw error
     }
   }
 
+  const handleConfirmPagoParcial = async (factura, pagoData) => {
+    try {
+      // Validar que el monto parcial no sea mayor que lo pendiente
+      const montoPendiente = (factura.monto || 0) - (factura.montoParcial || 0)
+      const montoAbonar = parseFloat(pagoData.montoParcial)
+
+      if (montoAbonar > montoPendiente) {
+        toast.error('El monto no puede ser mayor que el saldo pendiente')
+        return
+      }
+
+      // Calcular nuevo monto parcial total
+      const nuevoMontoParcial = (factura.montoParcial || 0) + montoAbonar
+
+      // Registrar el pago parcial
+      await facturaService.registrarPago(factura.id, {
+        montoParcial: nuevoMontoParcial,
+        metodoPago: pagoData.metodoPago,
+        fechaPago: pagoData.fechaPago,
+        observaciones: pagoData.observaciones
+      })
+
+      // Mensaje según si completó el pago o fue parcial
+      if (nuevoMontoParcial >= factura.monto) {
+        toast.success('¡Factura pagada completamente!')
+      } else {
+        toast.success(`Pago parcial registrado: $${montoAbonar.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`)
+      }
+
+      setShowPagoParcialModal(false)
+      setSelectedFactura(null)
+      loadFacturas(currentPage)
+    } catch (error) {
+      toast.error(error.message || 'Error al registrar pago parcial')
+      throw error
+    }
+  }
+
+  const handleRegistrarPagoParcial = (factura) => {
+    setSelectedFactura(factura)
+    setShowPagoParcialModal(true)
+  }
+
   const handleEstatusChange = (factura, nuevoEstatus) => {
-    if (nuevoEstatus === 'PAGADA') {
-      // Si cambia a PAGADA, abrir modal para ingresar método de pago y fecha
+    // Si cambia a PAGO_PARCIAL o ya está en PAGO_PARCIAL, abrir modal de pago parcial
+    if (nuevoEstatus === 'PAGO_PARCIAL' || factura.estatus === 'PAGO_PARCIAL') {
+      setSelectedFactura(factura)
+      setShowPagoParcialModal(true)
+    } else if (nuevoEstatus === 'PAGADA') {
+      // Si cambia a PAGADA, abrir modal para pago completo
       handlePagarFactura(factura)
     } else {
       // Para otros estados, actualizar directamente
@@ -148,7 +243,7 @@ const LiquidacionEfectivoPage = () => {
       }
       await facturaService.updateFacturaEstatus(factura.id, facturaActualizada)
       toast.success(`Estado actualizado a ${nuevoEstatus}`)
-      loadFacturas()
+      loadFacturas(currentPage)
     } catch (error) {
       toast.error(error.message || 'Error al actualizar estado')
     }
@@ -172,23 +267,13 @@ const LiquidacionEfectivoPage = () => {
       toast.success(`Factura ${facturaToDelete.numeroFactura} eliminada exitosamente`)
       setShowDeleteModal(false)
       setFacturaToDelete(null)
-      loadFacturas()
+      loadFacturas(currentPage)
     } catch (error) {
       toast.error(error.message || "Error al eliminar factura")
     }
   }
 
-  const filteredFacturas = facturas.filter(factura => {
-    const matchesSearch =
-      factura.numeroFactura?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      factura.observaciones?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesFilter = filterEstatus === 'TODAS' || factura.estatus === filterEstatus
-
-    return matchesSearch && matchesFilter
-  })
-
-  if (loading) {
+  if (loading && facturas.length === 0) {
     return (
       <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
         <div className="animate-pulse">
@@ -215,6 +300,13 @@ const LiquidacionEfectivoPage = () => {
               Facturas pagadas en efectivo (Sin facturar)
             </p>
           </div>
+          <button
+            onClick={() => exportFacturasPDF(filteredFacturas, stats)}
+            className="flex cursor-pointer items-center justify-center space-x-2 px-4 lg:px-6 py-2.5 lg:py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
+          >
+            <FileDown className="h-5 w-5" />
+            <span>Exportar PDF</span>
+          </button>
         </div>
       </div>
 
@@ -251,7 +343,7 @@ const LiquidacionEfectivoPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 lg:p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 lg:p-6 mb-4 lg:mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
@@ -272,11 +364,20 @@ const LiquidacionEfectivoPage = () => {
             >
               <option value="TODAS">Todas las facturas</option>
               <option value="PENDIENTE">Pendientes</option>
+              <option value="PAGO_PARCIAL">Pago parcial</option>
               <option value="PAGADA">Pagadas</option>
               <option value="VENCIDA">Vencidas</option>
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Results count */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-600">
+          Mostrando <span className="font-semibold text-slate-900">{filteredFacturas.length}</span> de{' '}
+          <span className="font-semibold text-slate-900">{totalElements}</span> facturas
+        </p>
       </div>
 
       {/* Facturas Grid */}
@@ -289,6 +390,7 @@ const LiquidacionEfectivoPage = () => {
             onPagar={handlePagarFactura}
             onViewDetails={handleViewDetails}
             onEstatusChange={handleEstatusChange}
+            onRegistrarPagoParcial={handleRegistrarPagoParcial}
             onDelete={handleDeleteFactura}
           />
         ))}
@@ -301,6 +403,93 @@ const LiquidacionEfectivoPage = () => {
         </div>
       )}
 
+      {/* Pagination Controls */}
+      {totalPages > 1 && !searchTerm.trim() && filterEstatus === 'TODAS' && (
+        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm mt-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0}
+              className="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+              disabled={currentPage === totalPages - 1}
+              className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-slate-700">
+                Mostrando <span className="font-medium">{currentPage * pageSize + 1}</span> a{' '}
+                <span className="font-medium">
+                  {Math.min((currentPage + 1) * pageSize, totalElements)}
+                </span>{' '}
+                de <span className="font-medium">{totalElements}</span> resultados
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Anterior</span>
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+                {[...Array(totalPages)].map((_, index) => {
+                  if (
+                    index === 0 ||
+                    index === totalPages - 1 ||
+                    (index >= currentPage - 1 && index <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(index)}
+                        aria-current={currentPage === index ? 'page' : undefined}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === index
+                          ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                          : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0'
+                          }`}
+                      >
+                        {index + 1}
+                      </button>
+                    )
+                  } else if (
+                    index === currentPage - 2 ||
+                    index === currentPage + 2
+                  ) {
+                    return (
+                      <span
+                        key={index}
+                        className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 focus:outline-offset-0"
+                      >
+                        ...
+                      </span>
+                    )
+                  }
+                  return null
+                })}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  disabled={currentPage === totalPages - 1}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Siguiente</span>
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       <PagarFacturaModal
         isOpen={showPagarModal}
@@ -309,6 +498,16 @@ const LiquidacionEfectivoPage = () => {
           setSelectedFactura(null)
         }}
         onConfirm={handleConfirmPago}
+        factura={selectedFactura}
+      />
+
+      <PagoParcialModal
+        isOpen={showPagoParcialModal}
+        onClose={() => {
+          setShowPagoParcialModal(false)
+          setSelectedFactura(null)
+        }}
+        onConfirm={handleConfirmPagoParcial}
         factura={selectedFactura}
       />
 

@@ -227,23 +227,32 @@ const EditViajeModal = ({ isOpen, onClose, onSave, viaje, operadores, clientes, 
 
     setIsLoading(true)
     try {
-      await onSave(viaje.id, {
+
+
+      const viajeActualizado = {
         idUnidad: parseInt(formData.idUnidad),
         idOperador: parseInt(formData.idOperador),
         idCliente: parseInt(formData.idCliente),
-        origen: rutaSeleccionada?.origen || 'N/A',
-        destino: rutaSeleccionada?.destino || 'N/A',
+        origen: rutaSeleccionada?.origen || viaje.origen || 'N/A',
+        destino: rutaSeleccionada?.destino || viaje.destino || 'N/A',
         fechaSalida: formData.fechaSalida,
         fechaEstimadaLlegada: formData.fechaEstimadaLlegada,
-        fechaRealLlegada: null,
+        fechaRealLlegada: viaje.fechaRealLlegada || null,
         estado: formData.estado,
         cargaDescripcion: formData.cargaDescripcion.trim(),
         tarifa: formData.tarifa ? parseFloat(formData.tarifa) : null,
         distanciaKm: formData.distanciaKm ? parseFloat(formData.distanciaKm) : null,
         tipo: formData.tipo,
         folio: formData.folio || null,
-        comisionOperador: formData.comisionOperador ? parseFloat(formData.comisionOperador) : null
-      }, archivo)
+        comisionOperador: formData.comisionOperador ? parseFloat(formData.comisionOperador) : null,
+        // Campos faltantes
+        casetas: formData.casetas ? parseFloat(formData.casetas) : null,
+        dieselLitros: formData.dieselCostoTotal ? parseFloat(formData.dieselCostoTotal) : null, // Este campo guarda el costo total
+        gastosExtras: formData.gastosExtras ? parseFloat(formData.gastosExtras) : null,
+        costoTotal: formData.costoTotal ? parseFloat(formData.costoTotal) : null
+      }
+
+      await onSave(viaje.id, viajeActualizado, archivo)
       onClose()
     } catch (error) {
       console.error('Error en handleSubmit:', error)

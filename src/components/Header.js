@@ -124,6 +124,12 @@ export function Header({ onMenuClick }) {
     }
   }
 
+  const handleSignOut = () => {
+  authService.logout()
+  toast.success('Sesión cerrada')
+  router.push('/')
+  }
+
   return (
     <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
       <div className="flex items-center justify-end px-4 lg:px-6 py-3 lg:py-4">
@@ -234,6 +240,9 @@ export function Header({ onMenuClick }) {
                     {user?.rol ? getRoleDisplayName(user.rol) : 'Usuario'}
                   </p>
                 </div>
+
+
+
 
                 <button
                   onClick={handleSignOut}

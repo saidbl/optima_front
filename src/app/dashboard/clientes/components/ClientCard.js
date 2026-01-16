@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from "react";
 import {
   Building2,
   MoreVertical,
@@ -9,56 +9,58 @@ import {
   Trash2,
   Mail,
   Phone,
-  MapPin
-} from 'lucide-react'
+  MapPin,
+  Calendar,
+} from "lucide-react";
 
 const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
-  const [showMenu, setShowMenu] = useState(false)
-  const menuRef = useRef(null)
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false)
+        setShowMenu(false);
       }
-    }
+    };
 
     if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showMenu])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
 
   // NUEVO: Función para formatear la dirección desde JSON o string
   const formatearDireccion = () => {
-    if (!client.direccion) return 'Sin dirección'
+    if (!client.direccion) return "Sin dirección";
 
     try {
-      const direccion = typeof client.direccion === 'string'
-        ? JSON.parse(client.direccion)
-        : client.direccion
+      const direccion =
+        typeof client.direccion === "string"
+          ? JSON.parse(client.direccion)
+          : client.direccion;
 
       // Construir dirección compacta para el card
-      const partes = []
+      const partes = [];
 
       if (direccion.calle && direccion.numeroExterior) {
-        partes.push(`${direccion.calle} ${direccion.numeroExterior}`)
+        partes.push(`${direccion.calle} ${direccion.numeroExterior}`);
       } else if (direccion.calle) {
-        partes.push(direccion.calle)
+        partes.push(direccion.calle);
       }
 
-      if (direccion.ciudad) partes.push(direccion.ciudad)
-      if (direccion.estado) partes.push(direccion.estado)
+      if (direccion.ciudad) partes.push(direccion.ciudad);
+      if (direccion.estado) partes.push(direccion.estado);
 
-      return partes.join(', ') || 'Sin dirección'
+      return partes.join(", ") || "Sin dirección";
     } catch (e) {
       // Si no es JSON, retornar el string tal cual (retrocompatibilidad)
-      return client.direccion
+      return client.direccion;
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all">
@@ -68,9 +70,21 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
             <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 shrink-0">
               <Building2 className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-base lg:text-lg font-semibold text-slate-900">{client.nombre}</h3>
-              <p className="text-xs lg:text-sm text-slate-500 mt-1">RFC: {client.rfc}</p>
+            <div className="flex-1">
+              <h3 className="text-base lg:text-lg font-semibold text-slate-900">
+                {client.nombre}
+              </h3>
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                <p className="text-xs lg:text-sm text-slate-500">
+                  RFC: {client.rfc || "N/A"}
+                </p>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md">
+                  <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-xs font-semibold text-blue-700">
+                    {client.diasCredito || 0} días
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="relative" ref={menuRef}>
@@ -84,8 +98,8 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-10">
                 <button
                   onClick={() => {
-                    onViewDetails(client)
-                    setShowMenu(false)
+                    onViewDetails(client);
+                    setShowMenu(false);
                   }}
                   className="flex cursor-pointer items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
@@ -94,8 +108,8 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
                 </button>
                 <button
                   onClick={() => {
-                    onEdit(client)
-                    setShowMenu(false)
+                    onEdit(client);
+                    setShowMenu(false);
                   }}
                   className="flex cursor-pointer items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
@@ -105,8 +119,8 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
                 <hr className="my-2 border-slate-100" />
                 <button
                   onClick={() => {
-                    onDelete(client)
-                    setShowMenu(false)
+                    onDelete(client);
+                    setShowMenu(false);
                   }}
                   className="flex cursor-pointer items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
@@ -134,7 +148,7 @@ const ClientCard = ({ client, onEdit, onDelete, onViewDetails }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ClientCard
+export default ClientCard;

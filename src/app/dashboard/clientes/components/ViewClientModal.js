@@ -1,60 +1,56 @@
-'use client'
+"use client";
 
-import {
-  Building2,
-  Phone,
-  MapPin
-} from 'lucide-react'
+import { Building2, Phone, MapPin, Calendar } from "lucide-react";
 
 // Función auxiliar para parsear dirección desde string a objeto
 const parseDireccion = (direccionString) => {
   const defaultDireccion = {
-    calle: '',
-    numeroExterior: '',
-    numeroInterior: '',
-    colonia: '',
-    ciudad: '',
-    estado: '',
-    codigoPostal: '',
-    pais: 'México'
-  }
+    calle: "",
+    numeroExterior: "",
+    numeroInterior: "",
+    colonia: "",
+    ciudad: "",
+    estado: "",
+    codigoPostal: "",
+    pais: "México",
+  };
 
-  if (!direccionString) return defaultDireccion
+  if (!direccionString) return defaultDireccion;
 
   try {
     // Intentar parsear como JSON primero (nuevos registros)
-    const direccionObj = JSON.parse(direccionString)
-    return { ...defaultDireccion, ...direccionObj }
+    const direccionObj = JSON.parse(direccionString);
+    return { ...defaultDireccion, ...direccionObj };
   } catch (e) {
     // Si falla, es un registro antiguo con formato de string concatenado
-    console.log('Parseando dirección legacy:', direccionString)
+    console.log("Parseando dirección legacy:", direccionString);
 
-    const partes = direccionString.split(',').map(p => p.trim())
+    const partes = direccionString.split(",").map((p) => p.trim());
 
     // Manejar diferentes longitudes del array
     if (partes.length >= 8) {
       return {
-        calle: partes[0] || '',
-        numeroExterior: partes[1] || '',
-        numeroInterior: partes[2] || '',
-        colonia: partes[3] || '',
-        ciudad: partes[4] || '',
-        estado: partes[5] || '',
-        codigoPostal: partes[6] || '',
-        pais: partes[7] || 'México'
-      }
+        calle: partes[0] || "",
+        numeroExterior: partes[1] || "",
+        numeroInterior: partes[2] || "",
+        colonia: partes[3] || "",
+        ciudad: partes[4] || "",
+        estado: partes[5] || "",
+        codigoPostal: partes[6] || "",
+        pais: partes[7] || "México",
+      };
     }
 
     // Si tiene menos partes, retornar default
-    console.warn('Formato de dirección no reconocido:', direccionString)
-    return defaultDireccion
+    console.warn("Formato de dirección no reconocido:", direccionString);
+    return defaultDireccion;
   }
-}
+};
 
 const ViewClientModal = ({ isOpen, onClose, client }) => {
-  if (!isOpen || !client) return null
+  if (!isOpen || !client) return null;
 
-  const direccionParsed = parseDireccion(client.direccion)
+  const direccionParsed = parseDireccion(client.direccion);
 
   return (
     <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -62,8 +58,12 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Detalles del cliente</h2>
-              <p className="text-sm text-slate-600 mt-1">Información completa del cliente</p>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Detalles del cliente
+              </h2>
+              <p className="text-sm text-slate-600 mt-1">
+                Información completa del cliente
+              </p>
             </div>
             <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700">
               <Building2 className="h-7 w-7 text-white" />
@@ -80,12 +80,31 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-500">Nombre / Razón social</label>
+                <label className="text-xs font-medium text-slate-500">
+                  Nombre / Razón social
+                </label>
                 <p className="text-sm text-slate-900 mt-1">{client.nombre}</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">RFC</label>
-                <p className="text-sm text-slate-900 mt-1">{client.rfc}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Días de crédito
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-700">
+                      {client.diasCredito || 0} días
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">
+                  RFC
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {client.rfc || "N/A"}
+                </p>
               </div>
             </div>
           </div>
@@ -98,11 +117,15 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-500">Correo electrónico</label>
+                <label className="text-xs font-medium text-slate-500">
+                  Correo electrónico
+                </label>
                 <p className="text-sm text-slate-900 mt-1">{client.correo}</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">Teléfono</label>
+                <label className="text-xs font-medium text-slate-500">
+                  Teléfono
+                </label>
                 <p className="text-sm text-slate-900 mt-1">{client.telefono}</p>
               </div>
             </div>
@@ -116,42 +139,73 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-500">Calle</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.calle || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Calle
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.calle || "N/A"}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">Número Exterior</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroExterior || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Número Exterior
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.numeroExterior || "N/A"}
+                </p>
               </div>
               {direccionParsed.numeroInterior && (
                 <div>
-                  <label className="text-xs font-medium text-slate-500">Número Interior</label>
-                  <p className="text-sm text-slate-900 mt-1">{direccionParsed.numeroInterior}</p>
+                  <label className="text-xs font-medium text-slate-500">
+                    Número Interior
+                  </label>
+                  <p className="text-sm text-slate-900 mt-1">
+                    {direccionParsed.numeroInterior}
+                  </p>
                 </div>
               )}
               <div>
-                <label className="text-xs font-medium text-slate-500">Colonia</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.colonia || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Colonia
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.colonia || "N/A"}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">Ciudad</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.ciudad || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Ciudad
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.ciudad || "N/A"}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">Estado</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.estado || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Estado
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.estado || "N/A"}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">Código Postal</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.codigoPostal || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  Código Postal
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.codigoPostal || "N/A"}
+                </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500">País</label>
-                <p className="text-sm text-slate-900 mt-1">{direccionParsed.pais || 'N/A'}</p>
+                <label className="text-xs font-medium text-slate-500">
+                  País
+                </label>
+                <p className="text-sm text-slate-900 mt-1">
+                  {direccionParsed.pais || "N/A"}
+                </p>
               </div>
             </div>
           </div>
-
         </div>
 
         <div className="p-6 border-t border-slate-200">
@@ -164,7 +218,7 @@ const ViewClientModal = ({ isOpen, onClose, client }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ViewClientModal
+export default ViewClientModal;

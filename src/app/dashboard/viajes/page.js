@@ -51,6 +51,92 @@ const TIPOS_VIAJE = {
   INTERNACIONAL: { label: 'Internacional', color: 'bg-pink-100 text-pink-800' }
 }
 
+const getMonthName = (monthIndex) => {
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  return months[monthIndex];
+}
+
+const getWeekTabs = (date) => {
+  const tabs = [];
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-11
+  const day = date.getDate();
+
+  // Rule: If currently in first week (day <= 7), include last week of previous month
+  if (day <= 7) {
+    const prevMonthDate = new Date(year, month - 1, 1);
+    const pmYear = prevMonthDate.getFullYear();
+    const pmMonth = prevMonthDate.getMonth();
+    const daysInPrevMonth = new Date(year, month, 0).getDate(); // last day of prev month
+
+    const startDay = 22;
+    const endDay = daysInPrevMonth;
+
+    tabs.push({
+      id: `prev-last`,
+      label: `Semana 4 ${getMonthName(pmMonth)} (${startDay}-${endDay})`,
+      start: new Date(pmYear, pmMonth, startDay),
+      end: new Date(pmYear, pmMonth, endDay, 23, 59, 59)
+    });
+  }
+
+  // Current Month Weeks
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Week 1
+  tabs.push({
+    id: `curr-1`,
+    label: `Semana 1 ${getMonthName(month)} (1-7)`,
+    start: new Date(year, month, 1),
+    end: new Date(year, month, 7, 23, 59, 59)
+  });
+
+  // Week 2
+  tabs.push({
+    id: `curr-2`,
+    label: `Semana 2 ${getMonthName(month)} (8-14)`,
+    start: new Date(year, month, 8),
+    end: new Date(year, month, 14, 23, 59, 59)
+  });
+
+  // Week 3
+  tabs.push({
+    id: `curr-3`,
+    label: `Semana 3 ${getMonthName(month)} (15-21)`,
+    start: new Date(year, month, 15),
+    end: new Date(year, month, 21, 23, 59, 59)
+  });
+
+  // Week 4 (22-End)
+  tabs.push({
+    id: `curr-4`,
+    label: `Semana 4 ${getMonthName(month)} (22-${daysInMonth})`,
+    start: new Date(year, month, 22),
+    end: new Date(year, month, daysInMonth, 23, 59, 59)
+  });
+
+  return tabs;
+}
+
+const getMonthTabs = (date) => {
+  const tabs = [];
+  // Last 3 months: Current, Current-1, Current-2
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(date.getFullYear(), date.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    tabs.unshift({
+      id: `month-${i}`,
+      label: `${getMonthName(month)} ${year}`,
+      start: new Date(year, month, 1),
+      end: new Date(year, month, daysInMonth, 23, 59, 59)
+    });
+  }
+  return tabs;
+}
+
 
 
 const EvidenciaModal = ({ isOpen, onClose, onSave, viaje, nuevoEstado, setViajes }) => {
@@ -461,6 +547,47 @@ const ViajesPage = () => {
     completados: 0
   })
 
+  // Nuevos estados para filtros de tiempo
+  const [viewMode, setViewMode] = useState('week') // 'week' | 'month'
+  const [timeTabs, setTimeTabs] = useState([])
+  const [activeTabId, setActiveTabId] = useState(null)
+
+  useEffect(() => {
+    const now = new Date()
+    let tabs = []
+
+    if (viewMode === 'week') {
+      tabs = getWeekTabs(now)
+    } else {
+      tabs = getMonthTabs(now)
+    }
+
+    setTimeTabs(tabs)
+
+    // Seleccionar automáticamente la pestaña actual
+    // Para semana: buscar la que incluye el día actual
+    // Para mes: buscar el mes actual
+    // Si no se encuentra (ej. estamos en semana 1 pero mostramos semana 4 del mes anterior), seleccionar la última o más relevante
+
+    const currentTab = tabs.find(tab =>
+      now >= tab.start && now <= tab.end
+    )
+
+    if (currentTab) {
+      setActiveTabId(currentTab.id)
+    } else {
+      // Default to the last available tab (current time) or first?
+      // Usually the user wants to see "Today". 
+      // If today is Feb 1st, getWeekTabs returns [PrevLast, Curr1, Curr2...]
+      // Curr1 is 1-7 Feb. So it matches.
+      // If for some reason no match, pick the one closest to now? 
+      // Or just the first one?
+      // Let's pick the last one in the list if no match found, logic usually implies sequential.
+      if (tabs.length > 0) setActiveTabId(tabs[tabs.length - 1].id)
+    }
+
+  }, [viewMode])
+
   const loadViajes = async () => {
     try {
       // Cargar TODOS los viajes siempre
@@ -696,7 +823,25 @@ const ViajesPage = () => {
       viaje.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (typeof viaje.ruta === 'string' && viaje.ruta.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    return matchesEstado && matchesSearch
+    // Filtrar por Fecha/Pestaña seleccionada
+    let matchesTime = true
+    if (activeTabId && timeTabs.length > 0) {
+      const activeTab = timeTabs.find(t => t.id === activeTabId)
+      if (activeTab) {
+        // Asumiendo formato YYYY-MM-DD
+        if (viaje.fechaSalida) {
+          // Ajustar zona horaria local para comparación correcta
+          const viajeDate = new Date(viaje.fechaSalida + 'T12:00:00') // Mediodía para evitar problemas de zona horaria
+          // Comparar solo fechas ignorando horas exactas si es necesario, pero activeTab.start/end ya cubre rango completo
+          matchesTime = viajeDate >= activeTab.start && viajeDate <= activeTab.end
+        } else {
+          // Si no tiene fecha, ¿lo mostramos? Probablemente no si estamos filtrando por tiempo.
+          matchesTime = false
+        }
+      }
+    }
+
+    return matchesEstado && matchesSearch && matchesTime
   })
 
   if (loading) {
@@ -773,8 +918,58 @@ const ViajesPage = () => {
         />
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      {/* Time Filter Switch & Tabs */}
+      <div className="mb-0 bg-white rounded-t-xl border border-b-0 border-slate-200 shadow-sm mx-1">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            Periodo de visualización
+          </h3>
+          {/* Switch Semanal/Mensual */}
+          <div className="flex bg-slate-200/50 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('week')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'week'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+                }`}
+            >
+              Semanal
+            </button>
+            <button
+              onClick={() => setViewMode('month')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'month'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+                }`}
+            >
+              Mensual
+            </button>
+          </div>
+        </div>
+
+        {/* Browser-like Tabs */}
+        <div className="flex items-end px-2 pt-2 bg-slate-100/50 border-b border-slate-200 overflow-x-auto scrollbar-hide">
+          {timeTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTabId(tab.id)}
+              className={`relative px-5 py-2.5 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap -mb-px border-t border-x ${activeTabId === tab.id
+                  ? 'bg-white text-gray-500 border-slate-200 z-10 font-semibold'
+                  : 'bg-slate-100 text-slate-500 border-transparent hover:bg-slate-200/80 hover:text-slate-700'
+                }`}
+            >
+              <div className={`flex items-center gap-2 ${activeTabId === tab.id ? 'opacity-100' : 'opacity-70'}`}>
+                {activeTabId === tab.id && <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>}
+                {tab.label}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Filters (merged visually with tabs) */}
+      <div className="bg-white rounded-b-xl rounded-t-none shadow-sm border border-t-0 border-slate-200 p-6 mb-6 mx-1 mt-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />

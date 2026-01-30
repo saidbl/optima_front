@@ -662,7 +662,7 @@ export default function GraficosPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
           {canViewStatCard(userRole, 'total-viajes') && (
             <StatCard
               title="Total de viajes"
@@ -680,14 +680,6 @@ export default function GraficosPage() {
               color="bg-orange-600"
             />
           )}
-          {canViewStatCard(userRole, 'unidades-activas') && (
-            <StatCard
-              title="Unidades activas"
-              value={`${stats.unidadesActivas}/${stats.totalUnidades}`}
-              icon={Truck}
-              color="bg-green-600"
-            />
-          )}
           {canViewStatCard(userRole, 'total-clientes') && (
             <StatCard
               title="Total clientes"
@@ -696,18 +688,10 @@ export default function GraficosPage() {
               color="bg-purple-600"
             />
           )}
-          {canViewStatCard(userRole, 'operadores-disponibles') && (
-            <StatCard
-              title="Operadores disponibles"
-              value={`${stats.operadoresDisponibles}/${stats.totalOperadores}`}
-              icon={Activity}
-              color="bg-cyan-600"
-            />
-          )}
         </div>
 
         {/* Segunda fila de stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
           {canViewStatCard(userRole, 'facturas-pendientes') && (
             <StatCard
               title="Facturas pendientes"
@@ -722,14 +706,6 @@ export default function GraficosPage() {
               value={`$${stats.totalFacturasPendientes.toLocaleString('es-MX', { minimumFractionDigits: 0 })}`}
               icon={DollarSign}
               color="bg-amber-600"
-            />
-          )}
-          {canViewStatCard(userRole, 'refacciones-stock-bajo') && (
-            <StatCard
-              title="Refacciones stock bajo"
-              value={stats.refaccionesStockBajo}
-              icon={Activity}
-              color="bg-rose-600"
             />
           )}
         </div>
@@ -838,9 +814,47 @@ export default function GraficosPage() {
             </div>
           )}
         </div>
-
+        {/* Gastos mensuales */}
+        {canViewChart(userRole, 'gastos-mensuales') && (
+          <div className="mt-6">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Gastos Mensuales</h3>
+                  <p className="text-sm text-slate-600">Evolución de gastos operativos</p>
+                </div>
+                <DollarSign className="h-6 w-6 text-blue-600" />
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={getGastosPorMes()}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="mes" stroke="#334155" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#334155" style={{ fontSize: '12px' }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(239, 68, 68, 0.05)' }} />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    name="Gasto Total"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorTotal)"
+                    dot={{ fill: '#ef4444', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
         {/* Gráficos de viajes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-6">
           {/* Viajes por mes */}
           {canViewChart(userRole, 'viajes-mes') && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
@@ -912,135 +926,9 @@ export default function GraficosPage() {
           )}
         </div>
 
-        {/* Gráficos de unidades */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Unidades por estado */}
-          {canViewChart(userRole, 'unidades-estado') && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Unidades por Estado</h3>
-                  <p className="text-sm text-slate-600">Estado actual de la flota</p>
-                </div>
-                <Truck className="h-6 w-6 text-blue-600" />
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <defs>
-                    <linearGradient id="gradActiva" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#059669" stopOpacity={1} />
-                    </linearGradient>
-                    <linearGradient id="gradMantenimiento" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
-                    </linearGradient>
-                    <linearGradient id="gradInactiva" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#dc2626" stopOpacity={1} />
-                    </linearGradient>
-                  </defs>
-                  <Pie
-                    data={getUnidadesPorEstado()}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {getUnidadesPorEstado().map((entry, index) => {
-                      const fillMap = {
-                        'ACTIVA': 'url(#gradActiva)',
-                        'MANTENIMIENTO': 'url(#gradMantenimiento)',
-                        'INACTIVA': 'url(#gradInactiva)'
-                      }
-                      return <Cell key={`cell-${index}`} fill={fillMap[entry.name] || COLORS.primary[index]} />
-                    })}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                    formatter={(value, entry) => (
-                      <span style={{ color: '#475569', fontSize: '12px' }}>
-                        {value}: {entry.payload.value} unidad{entry.payload.value !== 1 ? 'es' : ''}
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
 
-          {/* Kilometraje por unidad */}
-          {canViewChart(userRole, 'kilometraje-unidad') && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Kilometraje por Unidad</h3>
-                  <p className="text-sm text-slate-600">Top 10 unidades</p>
-                </div>
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getKilometrajePorUnidad()} layout="vertical">
-                  <defs>
-                    <linearGradient id="gradKm" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                  <XAxis type="number" stroke="#334155" style={{ fontSize: '12px' }} />
-                  <YAxis type="category" dataKey="unidad" stroke="#334155" style={{ fontSize: '11px' }} width={80} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }} />
-                  <Bar dataKey="kilometraje" name="Km" fill="url(#gradKm)" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
 
-        {/* Gastos mensuales */}
-        {canViewChart(userRole, 'gastos-mensuales') && (
-          <div className="mt-6">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Gastos Mensuales</h3>
-                  <p className="text-sm text-slate-600">Evolución de gastos operativos</p>
-                </div>
-                <DollarSign className="h-6 w-6 text-blue-600" />
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={getGastosPorMes()}>
-                  <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="mes" stroke="#334155" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#334155" style={{ fontSize: '12px' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(239, 68, 68, 0.05)' }} />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    name="Gasto Total"
-                    stroke="#ef4444"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorTotal)"
-                    dot={{ fill: '#ef4444', r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+
 
         {/* Gráficos de Clientes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -1121,95 +1009,6 @@ export default function GraficosPage() {
           )}
         </div>
 
-        {/* Gráficos de Operadores */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Viajes por operador */}
-          {canViewChart(userRole, 'viajes-operador') && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Viajes por Operador</h3>
-                  <p className="text-sm text-slate-600">Top 10 operadores</p>
-                </div>
-                <Activity className="h-6 w-6 text-cyan-600" />
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getViajesPorOperador()}>
-                  <defs>
-                    <linearGradient id="gradOperador" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.6} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis dataKey="name" stroke="#334155" style={{ fontSize: '10px' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis stroke="#334155" style={{ fontSize: '12px' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(6, 182, 212, 0.1)' }} />
-                  <Bar dataKey="value" name="Viajes" fill="url(#gradOperador)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Operadores por estatus */}
-          {canViewChart(userRole, 'operadores-estatus') && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Operadores por Estatus</h3>
-                  <p className="text-sm text-slate-600">Disponibilidad actual</p>
-                </div>
-                <Activity className="h-6 w-6 text-cyan-600" />
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <defs>
-                    <linearGradient id="gradDisp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#059669" stopOpacity={1} />
-                    </linearGradient>
-                    <linearGradient id="gradOcup" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
-                    </linearGradient>
-                    <linearGradient id="gradDesc" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={1} />
-                    </linearGradient>
-                  </defs>
-                  <Pie
-                    data={getOperadoresEstatus()}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {getOperadoresEstatus().map((entry, index) => {
-                      const fillMap = {
-                        'Disponible': 'url(#gradDisp)',
-                        'Ocupado': 'url(#gradOcup)',
-                        'Descanso': 'url(#gradDesc)'
-                      }
-                      return <Cell key={`cell-${index}`} fill={fillMap[entry.name] || COLORS.primary[index]} />
-                    })}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                    formatter={(value, entry) => (
-                      <span style={{ color: '#475569', fontSize: '12px' }}>
-                        {value}: {entry.payload.value}
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
 
         {/* Gráficos de Facturas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -1319,57 +1118,37 @@ export default function GraficosPage() {
             </div>
           )}
         </div>
-
-        {/* Gráficos de Refacciones */}
+        {/* Gráficos de unidades */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Refacciones por nivel de stock */}
-          {canViewChart(userRole, 'refacciones-categoria') && (
+          {/* Unidades por estado */}
+
+          {/* Kilometraje por unidad */}
+          {canViewChart(userRole, 'kilometraje-unidad') && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Refacciones por Nivel de Stock</h3>
-                  <p className="text-sm text-slate-600">Clasificación por cantidad disponible</p>
+                  <h3 className="text-lg font-bold text-slate-900">Kilometraje por Unidad</h3>
+                  <p className="text-sm text-slate-600">Top 10 unidades</p>
                 </div>
-                <PieChartIcon className="h-6 w-6 text-rose-600" />
+                <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
               <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
+                <BarChart data={getKilometrajePorUnidad()} layout="vertical">
                   <defs>
-                    {COLORS.primary.map((color, index) => (
-                      <linearGradient key={`gradRefCat${index}`} id={`gradRefCat${index}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={color} stopOpacity={1} />
-                        <stop offset="100%" stopColor={color} stopOpacity={0.7} />
-                      </linearGradient>
-                    ))}
+                    <linearGradient id="gradKm" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1} />
+                    </linearGradient>
                   </defs>
-                  <Pie
-                    data={getRefaccionesPorCategoria()}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {getRefaccionesPorCategoria().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={`url(#gradRefCat${index % COLORS.primary.length})`} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                    formatter={(value, entry) => (
-                      <span style={{ color: '#475569', fontSize: '12px' }}>
-                        {value}: {entry.payload.value}
-                      </span>
-                    )}
-                  />
-                </PieChart>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                  <XAxis type="number" stroke="#334155" style={{ fontSize: '12px' }} />
+                  <YAxis type="category" dataKey="unidad" stroke="#334155" style={{ fontSize: '11px' }} width={80} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }} />
+                  <Bar dataKey="kilometraje" name="Km" fill="url(#gradKm)" radius={[0, 8, 8, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}
-
           {/* Inventario bajo */}
           {canViewChart(userRole, 'inventario-bajo') && (
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
@@ -1404,6 +1183,7 @@ export default function GraficosPage() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   )

@@ -43,7 +43,7 @@ const ViajeCard = ({ viaje, onEdit, onDelete, onViewDetails, operadores, cliente
   // Verificar si el usuario es ADMIN
   useEffect(() => {
     const user = authService.getUser()
-    setIsAdmin(user?.rol === 'ADMIN')
+    setIsAdmin(user?.rol === 'ADMIN' || user?.rol === 'LOGISTICA')
   }, [])
 
   useEffect(() => {

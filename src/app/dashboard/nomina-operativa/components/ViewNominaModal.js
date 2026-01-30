@@ -1,9 +1,13 @@
-import { X, User, Calendar, DollarSign, Hash, FileText, CreditCard, TrendingUp, Wallet } from 'lucide-react'
+import { X, User, Calendar, DollarSign, Hash, FileText, CreditCard, TrendingUp, Wallet, MapPin, Package, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { usersService } from '@/app/services/usersService'
+import { viajesService } from '@/app/services/viajesService'
 
 const ViewNominaModal = ({ isOpen, onClose, nomina, operadores }) => {
     const [creadorNombre, setCreadorNombre] = useState('Cargando...')
+    const [viajes, setViajes] = useState([])
+    const [loadingViajes, setLoadingViajes] = useState(false)
+    const [showViajes, setShowViajes] = useState(false)
 
     useEffect(() => {
         const fetchCreador = async () => {
@@ -18,8 +22,28 @@ const ViewNominaModal = ({ isOpen, onClose, nomina, operadores }) => {
             }
         }
 
+        const fetchViajes = async () => {
+            if (nomina?.operadorId && nomina?.periodoInicio && nomina?.periodoFin) {
+                try {
+                    setLoadingViajes(true)
+                    const viajesData = await viajesService.getViajesByOperadorFechas(
+                        nomina.operadorId,
+                        nomina.periodoInicio,
+                        nomina.periodoFin
+                    )
+                    setViajes(viajesData || [])
+                } catch (error) {
+                    console.error('Error al cargar viajes:', error)
+                    setViajes([])
+                } finally {
+                    setLoadingViajes(false)
+                }
+            }
+        }
+
         if (isOpen && nomina) {
             fetchCreador()
+            fetchViajes()
         }
     }, [isOpen, nomina])
 
@@ -54,9 +78,28 @@ const ViewNominaModal = ({ isOpen, onClose, nomina, operadores }) => {
         })
     }
 
+    const formatShortDate = (dateString) => {
+        if (!dateString) return 'N/A'
+        const date = new Date(dateString)
+        return date.toLocaleDateString('es-MX', {
+            month: 'short',
+            day: 'numeric'
+        })
+    }
+
+    const getEstadoBadge = (estado) => {
+        const badges = {
+            'PENDIENTE': 'bg-yellow-100 text-yellow-800',
+            'EN_TRANSITO': 'bg-blue-100 text-blue-800',
+            'COMPLETADO': 'bg-green-100 text-green-800',
+            'CANCELADO': 'bg-red-100 text-red-800'
+        }
+        return badges[estado] || 'bg-gray-100 text-gray-800'
+    }
+
     return (
         <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full my-8">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full my-8">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-200">
                     <div className="flex items-center justify-between">
@@ -161,6 +204,87 @@ const ViewNominaModal = ({ isOpen, onClose, nomina, operadores }) => {
                             </div>
                             <p className="text-3xl font-bold text-blue-600">{formatCurrency(totalNeto)}</p>
                         </div>
+                    </div>
+
+                    {/* Viajes del Período */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setShowViajes(!showViajes)}
+                            className="w-full bg-slate-50 hover:bg-slate-100 transition-colors p-4 flex items-center justify-between"
+                        >
+                            <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-2 text-slate-700" />
+                                <h3 className="text-sm font-semibold text-slate-900">
+                                    Viajes del Período ({loadingViajes ? '...' : viajes.length})
+                                </h3>
+                            </div>
+                            {showViajes ? (
+                                <ChevronUp className="h-5 w-5 text-slate-400" />
+                            ) : (
+                                <ChevronDown className="h-5 w-5 text-slate-400" />
+                            )}
+                        </button>
+
+                        {showViajes && (
+                            <div className="p-4 bg-white">
+                                {loadingViajes ? (
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                        <p className="text-sm text-slate-500 mt-2">Cargando viajes...</p>
+                                    </div>
+                                ) : viajes.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <Package className="h-12 w-12 text-slate-300 mx-auto mb-2" />
+                                        <p className="text-sm text-slate-500">No hay viajes en este período</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {viajes.map((viaje, index) => (
+                                            <div
+                                                key={viaje.viajeId || `viaje-${index}`}
+                                                className="border border-slate-200 rounded-lg p-3 hover:border-blue-300 transition-colors"
+                                            >
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-xs font-mono text-slate-500">#{viaje.viajeId}</span>
+                                                            {viaje.folio && (
+                                                                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+                                                                    {viaje.folio}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center text-sm text-slate-700 mb-1">
+                                                            <MapPin className="h-3 w-3 mr-1 text-blue-500" />
+                                                            <span className="font-medium">{viaje.ruta || 'Ruta no especificada'}</span>
+                                                        </div>
+                                                        {viaje.cliente && (
+                                                            <div className="flex items-center text-xs text-slate-600">
+                                                                <User className="h-3 w-3 mr-1 text-slate-400" />
+                                                                <span>Cliente: {viaje.cliente}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {viaje.comision && (
+                                                        <div className="text-right">
+                                                            <p className="text-xs text-slate-500">Comisión</p>
+                                                            <p className="text-sm font-semibold text-green-600">
+                                                                {formatCurrency(viaje.comision)}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {viaje.observaciones && (
+                                                    <div className="mt-2 pt-2 border-t border-slate-100">
+                                                        <p className="text-xs text-slate-600">{viaje.observaciones}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Observaciones */}

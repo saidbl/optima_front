@@ -14,24 +14,34 @@ import {
   Calendar,
 } from "lucide-react";
 import { facturaService } from "@/app/services/facturaService";
+import finanzasService from "@/app/services/finanzasService";
 import { authService } from "@/app/services/authService";
 import toast from "react-hot-toast";
 
 // Componente para las tarjetas superiores (placeholder para futuras implementaciones)
-const StatCard = ({ title, value, color, placeholder = false }) => (
+const StatCard = ({
+  title,
+  value,
+  color,
+  placeholder = false,
+  loading = false,
+}) => (
   <div className="bg-white rounded-lg shadow-sm p-3 border border-slate-200 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between">
       <div className="flex-1">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-medium text-slate-600">{title}</p>
           <div
-            className={`p-1.5 rounded-md ${placeholder ? "bg-slate-200" : color}`}
+            className={`p-1.5 rounded-md ${placeholder ? "bg-slate-200" : color
+              }`}
           >
             <DollarSign className="h-3.5 w-3.5 text-white" />
           </div>
         </div>
-        {placeholder ? (
-          <p className="text-lg font-bold text-slate-400">No implementado</p>
+        {loading ? (
+          <div className="h-7 w-32 bg-slate-100 rounded animate-pulse mt-0.5"></div>
+        ) : placeholder ? (
+          <p className="text-lg font-bold text-slate-400">$0.00</p>
         ) : (
           <p className="text-xl font-bold text-slate-900">{value}</p>
         )}
@@ -393,9 +403,75 @@ const Dashboard = () => {
   const [diasHistorial, setDiasHistorial] = useState(30);
   const [diasCompletadas, setDiasCompletadas] = useState(10);
 
+  // Estados para Finanzas (Tabs Compactos)
+  const [activeTab, setActiveTab] = useState("diario");
+  const [finanzasData, setFinanzasData] = useState({
+    ingresos: 0,
+    gastos: 0,
+    utilidad: 0,
+    fecha: "",
+  });
+  const [loadingFinanzas, setLoadingFinanzas] = useState(false);
+
   useEffect(() => {
     loadDashboardData();
   }, [diasHistorial, diasCompletadas]);
+
+  useEffect(() => {
+    loadFinanzasData();
+  }, [activeTab]);
+
+  const loadFinanzasData = async () => {
+    try {
+      setLoadingFinanzas(true);
+
+      // Promesa de delay artificial para suavizar la transición (600ms)
+      const delayPromise = new Promise(resolve => setTimeout(resolve, 600));
+
+      let dataPromise;
+      const today = new Date();
+      const currentMonth = today.getMonth() + 1; // 1-12
+      const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+
+      switch (activeTab) {
+        case "diario":
+          dataPromise = finanzasService.getFinanzasDiario();
+          break;
+        case "semanal":
+          dataPromise = finanzasService.getFinanzasSemanal();
+          break;
+        case "mes_actual":
+          dataPromise = finanzasService.getFinanzasMensual(currentMonth);
+          break;
+        case "mes_anterior":
+          dataPromise = finanzasService.getFinanzasMensual(previousMonth);
+          break;
+        default:
+          dataPromise = finanzasService.getFinanzasDiario();
+      }
+
+      // Esperar a que ambas promesas se resuelvan (datos + delay mínimo)
+      const [data] = await Promise.all([dataPromise, delayPromise]);
+
+      setFinanzasData(data);
+    } catch (error) {
+      console.error("Error al cargar datos de finanzas:", error);
+      toast.error("Error al cargar datos financieros");
+    } finally {
+      setLoadingFinanzas(false);
+    }
+  };
+
+  // Obtener nombres de los meses
+  const fechaActual = new Date();
+  const nombreMesActual = fechaActual.toLocaleString('es-MX', { month: 'long' });
+  const fechaAnterior = new Date();
+  fechaAnterior.setMonth(fechaActual.getMonth() - 1);
+  const nombreMesAnterior = fechaAnterior.toLocaleString('es-MX', { month: 'long' });
+  // Capitalizar primera letra
+  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const nombreMesActualCap = capitalize(nombreMesActual);
+  const nombreMesAnteriorCap = capitalize(nombreMesAnterior);
 
   const loadDashboardData = async () => {
     try {
@@ -449,36 +525,87 @@ const Dashboard = () => {
 
       {/* Tabs compactos */}
       <div className="mb-3 bg-white rounded-lg shadow-sm border border-slate-200 p-1 inline-flex space-x-1">
-        <button className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md transition-all">
+        <button
+          onClick={() => setActiveTab("diario")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === "diario"
+            ? "text-white bg-blue-600"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+        >
           Día
         </button>
-        <button className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all">
+        <button
+          onClick={() => setActiveTab("semanal")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === "semanal"
+            ? "text-white bg-blue-600"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+        >
           Semana
         </button>
-        <button className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-all">
-          Mes
+        <button
+          onClick={() => setActiveTab("mes_actual")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === "mes_actual"
+            ? "text-white bg-blue-600"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+        >
+          {nombreMesActual}
+        </button>
+        <button
+          onClick={() => setActiveTab("mes_anterior")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === "mes_anterior"
+            ? "text-white bg-blue-600"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+        >
+          {nombreMesAnterior}
         </button>
       </div>
 
       {/* Tarjetas superiores compactas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
         <StatCard
-          title="INGRESOS DEL DÍA"
-          value="$0.00"
+          title={`INGRESOS (${activeTab === "mes_actual"
+            ? nombreMesActualCap.toUpperCase()
+            : activeTab === "mes_anterior"
+              ? nombreMesAnteriorCap.toUpperCase()
+              : activeTab.toUpperCase()
+            })`}
+          value={new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+          }).format(finanzasData?.ingresos || 0)}
           color="bg-gradient-to-br from-blue-600 to-blue-700"
-          placeholder={true}
+          loading={loadingFinanzas}
         />
         <StatCard
-          title="GASTOS DEL DÍA"
-          value="$0.00"
+          title={`GASTOS (${activeTab === "mes_actual"
+            ? nombreMesActualCap.toUpperCase()
+            : activeTab === "mes_anterior"
+              ? nombreMesAnteriorCap.toUpperCase()
+              : activeTab.toUpperCase()
+            })`}
+          value={new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+          }).format(finanzasData?.gastos || 0)}
           color="bg-gradient-to-br from-red-600 to-red-700"
-          placeholder={true}
+          loading={loadingFinanzas}
         />
         <StatCard
-          title="GANANCIA DEL DÍA"
-          value="$0.00"
+          title={`UTILIDAD (${activeTab === "mes_actual"
+            ? nombreMesActualCap.toUpperCase()
+            : activeTab === "mes_anterior"
+              ? nombreMesAnteriorCap.toUpperCase()
+              : activeTab.toUpperCase()
+            })`}
+          value={new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+          }).format(finanzasData?.utilidad || 0)}
           color="bg-gradient-to-br from-green-600 to-green-700"
-          placeholder={true}
+          loading={loadingFinanzas}
         />
       </div>
 

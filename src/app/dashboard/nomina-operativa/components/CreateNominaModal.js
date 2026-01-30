@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Save, User, Calendar, DollarSign, Hash, FileText, AlertCircle, CreditCard } from 'lucide-react'
+import { X, Save, User, Calendar, DollarSign, Hash, FileText, AlertCircle, CreditCard, MapPin, Package, ChevronDown, ChevronUp } from 'lucide-react'
 import { authService } from '@/app/services/authService'
 import { viajesService } from '@/app/services/viajesService'
 
@@ -15,6 +15,8 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
     const [currentUserId, setCurrentUserId] = useState(null)
     const [loadingViajes, setLoadingViajes] = useState(false)
     const [loadingComisiones, setLoadingComisiones] = useState(false)
+    const [viajesDetallados, setViajesDetallados] = useState([]) // Viajes con desglose completo
+    const [showViajes, setShowViajes] = useState(false) // Mostrar/ocultar desglose
     const [formData, setFormData] = useState({
         operadorId: '',
         periodoInicio: '',
@@ -89,12 +91,13 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
                 const viajes = response.content || response || []
 
                 // Filtrar viajes que estén dentro del periodo
-                const fechaInicio = new Date(formData.periodoInicio)
-                const fechaFin = new Date(formData.periodoFin)
+                // Agregar T12:00:00 para evitar problemas de zona horaria
+                const fechaInicio = new Date(formData.periodoInicio + 'T12:00:00')
+                const fechaFin = new Date(formData.periodoFin + 'T12:00:00')
 
                 const viajesEnPeriodo = viajes.filter(viaje => {
                     if (!viaje.fechaSalida) return false
-                    const fechaSalida = new Date(viaje.fechaSalida)
+                    const fechaSalida = new Date(viaje.fechaSalida + 'T12:00:00')
                     return fechaSalida >= fechaInicio && fechaSalida <= fechaFin
                 })
 
@@ -112,6 +115,30 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
         }
 
         calcularNumeroViajes()
+    }, [formData.operadorId, formData.periodoInicio, formData.periodoFin])
+
+    // Cargar desglose completo de viajes usando la nueva API
+    useEffect(() => {
+        const cargarViajesDetallados = async () => {
+            if (!formData.operadorId || !formData.periodoInicio || !formData.periodoFin) {
+                setViajesDetallados([])
+                return
+            }
+
+            try {
+                const viajes = await viajesService.getViajesByOperadorFechas(
+                    formData.operadorId,
+                    formData.periodoInicio,
+                    formData.periodoFin
+                )
+                setViajesDetallados(viajes || [])
+            } catch (error) {
+                console.error('Error al cargar viajes detallados:', error)
+                setViajesDetallados([])
+            }
+        }
+
+        cargarViajesDetallados()
     }, [formData.operadorId, formData.periodoInicio, formData.periodoFin])
 
     const [errors, setErrors] = useState({})
@@ -584,6 +611,85 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
                             </span>
                         </div>
                     </div>
+
+                    {/* Desglose de Viajes del Período */}
+                    {formData.operadorId && formData.periodoInicio && formData.periodoFin && (
+                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setShowViajes(!showViajes)}
+                                className="w-full bg-slate-50 hover:bg-slate-100 transition-colors p-4 flex items-center justify-between"
+                            >
+                                <div className="flex items-center">
+                                    <MapPin className="h-4 w-4 mr-2 text-slate-700" />
+                                    <h3 className="text-sm font-semibold text-slate-900">
+                                        Viajes del Período ({viajesDetallados.length})
+                                    </h3>
+                                </div>
+                                {showViajes ? (
+                                    <ChevronUp className="h-5 w-5 text-slate-400" />
+                                ) : (
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                )}
+                            </button>
+
+                            {showViajes && (
+                                <div className="p-4 bg-white max-h-80 overflow-y-auto">
+                                    {viajesDetallados.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <Package className="h-12 w-12 text-slate-300 mx-auto mb-2" />
+                                            <p className="text-sm text-slate-500">No hay viajes en este período</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {viajesDetallados.map((viaje, index) => (
+                                                <div
+                                                    key={viaje.viajeId || `viaje-${index}`}
+                                                    className="border border-slate-200 rounded-lg p-3 hover:border-blue-300 transition-colors"
+                                                >
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-mono text-slate-500">#{viaje.viajeId}</span>
+                                                                {viaje.folio && (
+                                                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+                                                                        {viaje.folio}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center text-sm text-slate-700 mb-1">
+                                                                <MapPin className="h-3 w-3 mr-1 text-blue-500" />
+                                                                <span className="font-medium">{viaje.ruta || 'Ruta no especificada'}</span>
+                                                            </div>
+                                                            {viaje.cliente && (
+                                                                <div className="flex items-center text-xs text-slate-600">
+                                                                    <User className="h-3 w-3 mr-1 text-slate-400" />
+                                                                    <span>Cliente: {viaje.cliente}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {viaje.comision && (
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-slate-500">Comisión</p>
+                                                                <p className="text-sm font-semibold text-green-600">
+                                                                    ${parseFloat(viaje.comision || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {viaje.observaciones && (
+                                                        <div className="mt-2 pt-2 border-t border-slate-100">
+                                                            <p className="text-xs text-slate-600">{viaje.observaciones}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Observaciones */}
                     <div>

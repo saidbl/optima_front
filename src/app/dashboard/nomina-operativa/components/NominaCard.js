@@ -26,7 +26,8 @@ const NominaCard = ({ nomina, operadores, onEdit, onDelete, onViewDetails }) => 
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A'
-        const date = new Date(dateString)
+        // Agregar T00:00:00 para evitar problemas de zona horaria
+        const date = new Date(dateString + 'T00:00:00')
         return date.toLocaleDateString('es-MX', {
             year: 'numeric',
             month: 'short',

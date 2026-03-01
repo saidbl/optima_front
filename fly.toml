@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for optimatransportes on 2025-10-23T18:28:38-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+app = 'optimatransportes-long-water-6096'
+primary_region = 'sjc'
+
+[build]
+
+[env]
+  NEXT_PUBLIC_BACKEND_URL = 'https://transportes-backend.fly.dev'
+  NODE_ENV = 'production'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+  grace_period = '120s'
+
+[[vm]]
+  memory = '2048mb'
+  cpu_kind = 'shared'
+  cpus = 4
+
+ 

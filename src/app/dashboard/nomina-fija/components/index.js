@@ -1,0 +1,6 @@
+export { default as StatCard } from './StatCard'
+export { default as NominaFijaCard } from './NominaFijaCard'
+export { default as CreateNominaFijaModal } from './CreateNominaFijaModal'
+export { default as EditNominaFijaModal } from './EditNominaFijaModal'
+export { default as ViewNominaFijaModal } from './ViewNominaFijaModal'
+export { default as ConfirmDeleteModal } from './ConfirmDeleteModal'

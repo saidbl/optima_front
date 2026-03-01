@@ -1,0 +1,799 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { MapPin, Calendar, User, Package, Truck, AlertCircle, Upload, X } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { authService } from '@/app/services/authService'
+import tarifasComisionesService from '@/app/services/tarifasComisionesService'
+
+const EditViajeModal = ({ isOpen, onClose, onSave, viaje, operadores, clientes, unidades, onEstadoChange }) => {
+  const [formData, setFormData] = useState({
+    idUnidad: '',
+    idOperador: '',
+    idCliente: '',
+    idRutaComisiones: '',
+    fechaSalida: '',
+    fechaEstimadaLlegada: '',
+    estado: 'PENDIENTE',
+    cargaDescripcion: '',
+    observaciones: '',
+    tipo: 'NORMAL',
+    responsableLogistica: '',
+    evidenciaUrl: '',
+    creadoPor: '',
+    tarifa: '',
+    distanciaKm: '',
+    casetas: '',
+    dieselLitros: '',
+    dieselPrecioPorLitro: '',
+    dieselCostoTotal: '',
+    comisionOperador: '',
+    gastosExtras: '',
+    costoTotal: '',
+    folio: ''
+  })
+  const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [rutasDisponibles, setRutasDisponibles] = useState([])
+  const [rutaSeleccionada, setRutaSeleccionada] = useState(null)
+  const [tarifaRuta, setTarifaRuta] = useState(null)
+  const [loadingRutas, setLoadingRutas] = useState(false)
+  const [archivo, setArchivo] = useState(null)
+
+  // Obtener usuario autenticado al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      const user = authService.getUser()
+      setCurrentUser(user)
+      setErrors({})
+    }
+  }, [isOpen])
+
+  // Cargar datos del viaje cuando se abre el modal
+  useEffect(() => {
+    if (viaje && isOpen) {
+      setFormData({
+        idUnidad: viaje.idUnidad || viaje.unidad?.id || '',
+        idOperador: viaje.idOperador || viaje.operador?.id || '',
+        idCliente: viaje.idCliente || viaje.cliente?.id || '',
+        idRutaComisiones: viaje.idRutaComisiones || viaje.rutaComisiones?.id || '',
+        fechaSalida: viaje.fechaSalida || '',
+        fechaEstimadaLlegada: viaje.fechaEstimadaLlegada || '',
+        estado: viaje.estado || 'PENDIENTE',
+        cargaDescripcion: viaje.cargaDescripcion || '',
+        observaciones: viaje.observaciones || '',
+        tipo: viaje.tipo || 'NORMAL',
+        responsableLogistica: viaje.responsableLogistica || '',
+        evidenciaUrl: viaje.evidenciaUrl || '',
+        creadoPor: viaje.creadoPor || '',
+        tarifa: viaje.tarifa || '',
+        distanciaKm: viaje.distanciaKm || '',
+        casetas: viaje.casetas || '',
+        dieselLitros: '', // Se calcula a partir del diesel total dividido entre precio
+        dieselPrecioPorLitro: '',
+        dieselCostoTotal: viaje.dieselLitros || '', // En el backend se guarda como dieselLitros pero es el costo
+        comisionOperador: viaje.comisionOperador || '',
+        gastosExtras: viaje.gastosExtras || '',
+        costoTotal: viaje.costoTotal || '',
+        folio: viaje.folio || ''
+      })
+    }
+  }, [viaje, isOpen])
+
+  // Cargar rutas cuando se selecciona un cliente
+  useEffect(() => {
+    const loadRutasCliente = async () => {
+      if (!formData.idCliente) {
+        setRutasDisponibles([])
+        setRutaSeleccionada(null)
+        setTarifaRuta(null)
+        return
+      }
+
+      setLoadingRutas(true)
+      try {
+        const response = await tarifasComisionesService.getRutasComisionesByCliente(formData.idCliente, 0, 100)
+        const rutas = response.content || response || []
+        setRutasDisponibles(rutas)
+      } catch (error) {
+        console.error('Error al cargar rutas del cliente:', error)
+        setRutasDisponibles([])
+      } finally {
+        setLoadingRutas(false)
+      }
+    }
+
+    if (isOpen) {
+      loadRutasCliente()
+    }
+  }, [formData.idCliente, isOpen])
+
+  // Actualizar ruta seleccionada cuando cambia la selección
+  useEffect(() => {
+    if (!formData.idRutaComisiones) {
+      setRutaSeleccionada(null)
+      setTarifaRuta(null)
+      return
+    }
+
+    // Buscar la ruta seleccionada en las rutas disponibles
+    const ruta = rutasDisponibles.find(r => r.id === parseInt(formData.idRutaComisiones))
+    setRutaSeleccionada(ruta || null)
+  }, [formData.idRutaComisiones, rutasDisponibles])
+
+  // Cargar tarifa y comisión cuando se selecciona una ruta
+  useEffect(() => {
+    const loadTarifaRuta = async () => {
+      if (!formData.idRutaComisiones || !formData.idCliente) {
+        setTarifaRuta(null)
+        return
+      }
+
+      try {
+        const datos = await tarifasComisionesService.getRutaComisionByRutaYCliente(
+          formData.idRutaComisiones,
+          formData.idCliente
+        )
+        setTarifaRuta(datos)
+      } catch (error) {
+        console.error('Error al cargar tarifa de la ruta:', error)
+        setTarifaRuta(null)
+      }
+    }
+
+    if (isOpen && formData.idRutaComisiones) {
+      loadTarifaRuta()
+    }
+  }, [formData.idRutaComisiones, formData.idCliente, isOpen])
+
+  // Calcular costo total del diesel automáticamente
+  useEffect(() => {
+    const litros = parseFloat(formData.dieselLitros) || 0
+    const precioPorLitro = parseFloat(formData.dieselPrecioPorLitro) || 0
+
+    if (litros > 0 && precioPorLitro > 0) {
+      const costoTotal = litros * precioPorLitro
+      setFormData(prev => ({
+        ...prev,
+        dieselCostoTotal: costoTotal.toFixed(2)
+      }))
+    }
+  }, [formData.dieselLitros, formData.dieselPrecioPorLitro])
+
+  // Calcular costo total automáticamente
+  useEffect(() => {
+    const casetas = parseFloat(formData.casetas) || 0
+    const dieselCostoTotal = parseFloat(formData.dieselCostoTotal) || 0
+    const comisionOperador = parseFloat(formData.comisionOperador) || 0
+    const gastosExtras = parseFloat(formData.gastosExtras) || 0
+
+    const total = casetas + dieselCostoTotal + comisionOperador + gastosExtras
+
+    setFormData(prev => ({
+      ...prev,
+      costoTotal: total > 0 ? total.toFixed(2) : ''
+    }))
+  }, [formData.casetas, formData.dieselCostoTotal, formData.comisionOperador, formData.gastosExtras])
+
+  // Validación del formulario
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (!formData.idOperador) {
+      newErrors.idOperador = 'Debes seleccionar un operador'
+    }
+    if (!formData.idCliente) {
+      newErrors.idCliente = 'Debes seleccionar un cliente'
+    }
+    if (!formData.idUnidad) {
+      newErrors.idUnidad = 'Debes seleccionar una unidad'
+    }
+    if (!formData.fechaSalida) {
+      newErrors.fechaSalida = 'La fecha de salida es obligatoria'
+    }
+    if (!formData.fechaEstimadaLlegada) {
+      newErrors.fechaEstimadaLlegada = 'La fecha estimada de llegada es obligatoria'
+    }
+    if (formData.fechaSalida && formData.fechaEstimadaLlegada) {
+      const fechaSalida = new Date(formData.fechaSalida)
+      const fechaLlegada = new Date(formData.fechaEstimadaLlegada)
+      if (fechaLlegada < fechaSalida) {
+        newErrors.fechaEstimadaLlegada = 'La fecha de llegada no puede ser anterior a la fecha de salida'
+      }
+    }
+    if (!formData.cargaDescripcion || !formData.cargaDescripcion.trim()) {
+      newErrors.cargaDescripcion = 'La descripción de la carga es obligatoria'
+    } else if (formData.cargaDescripcion.trim().length < 10) {
+      newErrors.cargaDescripcion = 'La descripción debe tener al menos 10 caracteres'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
+      return
+    }
+
+    if (!currentUser?.id) {
+      toast.error('No se pudo obtener el usuario autenticado')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+
+
+      const viajeActualizado = {
+        idUnidad: parseInt(formData.idUnidad),
+        idOperador: parseInt(formData.idOperador),
+        idCliente: parseInt(formData.idCliente),
+        origen: rutaSeleccionada?.origen || viaje.origen || 'N/A',
+        destino: rutaSeleccionada?.destino || viaje.destino || 'N/A',
+        fechaSalida: formData.fechaSalida,
+        fechaEstimadaLlegada: formData.fechaEstimadaLlegada,
+        fechaRealLlegada: viaje.fechaRealLlegada || null,
+        estado: formData.estado,
+        cargaDescripcion: formData.cargaDescripcion.trim(),
+        tarifa: formData.tarifa ? parseFloat(formData.tarifa) : null,
+        distanciaKm: formData.distanciaKm ? parseFloat(formData.distanciaKm) : null,
+        tipo: formData.tipo,
+        folio: formData.folio || null,
+        comisionOperador: formData.comisionOperador ? parseFloat(formData.comisionOperador) : null,
+        // Campos faltantes
+        casetas: formData.casetas ? parseFloat(formData.casetas) : null,
+        dieselLitros: formData.dieselCostoTotal ? parseFloat(formData.dieselCostoTotal) : null, // Este campo guarda el costo total
+        gastosExtras: formData.gastosExtras ? parseFloat(formData.gastosExtras) : null,
+        costoTotal: formData.costoTotal ? parseFloat(formData.costoTotal) : null
+      }
+
+      await onSave(viaje.id, viajeActualizado, archivo)
+      onClose()
+    } catch (error) {
+      console.error('Error en handleSubmit:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
+          <h2 className="text-2xl font-bold text-slate-900">Editar viaje #{viaje?.id}</h2>
+          <p className="text-sm text-slate-600 mt-1">Actualiza la información del viaje</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Sección: Asignaciones */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <User className="h-5 w-5 mr-2 text-blue-600" />
+              Asignaciones
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Operador *
+                </label>
+                <select
+                  value={formData.idOperador}
+                  onChange={(e) => setFormData({ ...formData, idOperador: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un operador</option>
+                  {operadores.map((op) => (
+                    <option key={op.id} value={op.id}>
+                      {op.nombre} - {op.licencia}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Cliente *
+                </label>
+                <select
+                  value={formData.idCliente}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      idCliente: e.target.value,
+                      idRutaComisiones: '' // Resetear ruta al cambiar cliente
+                    })
+                  }}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clientes.map((cliente) => (
+                    <option key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Unidad *
+                </label>
+                <select
+                  value={formData.idUnidad}
+                  onChange={(e) => setFormData({ ...formData, idUnidad: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="">Selecciona una unidad</option>
+                  {unidades && unidades.map((unidad) => (
+                    <option key={unidad.id} value={unidad.id}>
+                      {unidad.numeroEconomico} - {unidad.placas}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Tipo de viaje y Ruta comisiones */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-blue-600" />
+              Configuración del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de viaje *
+                </label>
+                <select
+                  value={formData.tipo}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  required
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="ESPECIAL">Especial</option>
+                  <option value="URGENTE">Urgente</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Folio
+                </label>
+                <input
+                  type="text"
+                  value={formData.folio}
+                  onChange={(e) => setFormData({ ...formData, folio: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="FOL001"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Ruta de comisiones
+                </label>
+                <select
+                  value={formData.idRutaComisiones}
+                  onChange={(e) => setFormData({ ...formData, idRutaComisiones: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  disabled={!formData.idCliente || loadingRutas}
+                >
+                  <option value="">
+                    {!formData.idCliente
+                      ? 'Primero selecciona un cliente'
+                      : loadingRutas
+                        ? 'Cargando rutas...'
+                        : 'Selecciona una ruta'}
+                  </option>
+                  {rutasDisponibles.map((ruta) => (
+                    <option key={ruta.id} value={ruta.id}>
+                      {ruta.origen} → {ruta.destino} {ruta.kms ? `(${ruta.kms} km)` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  {rutasDisponibles.length > 0
+                    ? `${rutasDisponibles.length} ruta(s) disponible(s)`
+                    : formData.idCliente ? 'No hay rutas disponibles para este cliente' : 'Selecciona un cliente para ver rutas'}
+                </p>
+              </div>
+            </div>
+
+            {/* Mostrar información de tarifa si existe */}
+            {rutaSeleccionada && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+                  <Package className="h-4 w-4 mr-2" />
+                  Información de la Ruta
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-blue-600 font-medium">Origen</p>
+                    <p className="text-blue-900">{rutaSeleccionada.origen || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-600 font-medium">Destino</p>
+                    <p className="text-blue-900">{rutaSeleccionada.destino || 'N/A'}</p>
+                  </div>
+                  {rutaSeleccionada.kms && (
+                    <div>
+                      <p className="text-blue-600 font-medium">Distancia</p>
+                      <p className="text-blue-900">{rutaSeleccionada.kms} km</p>
+                    </div>
+                  )}
+                  {tarifaRuta?.tarifa && (
+                    <div>
+                      <p className="text-blue-600 font-medium">Tarifa</p>
+                      <p className="text-blue-900 font-bold">
+                        ${parseFloat(tarifaRuta.tarifa).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                  {tarifaRuta?.comision && (
+                    <div>
+                      <p className="text-blue-600 font-medium">Comisión</p>
+                      <p className="text-blue-900">
+                        ${parseFloat(tarifaRuta.comision).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sección: Fechas */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+              Fechas del Viaje
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha de salida *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaSalida}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fechaSalida: e.target.value })
+                    if (errors.fechaSalida) setErrors({ ...errors, fechaSalida: '' })
+                  }}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.fechaSalida
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
+                />
+                {errors.fechaSalida && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.fechaSalida}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fecha estimada de llegada *
+                </label>
+                <input
+                  type="date"
+                  value={formData.fechaEstimadaLlegada}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fechaEstimadaLlegada: e.target.value })
+                    if (errors.fechaEstimadaLlegada) setErrors({ ...errors, fechaEstimadaLlegada: '' })
+                  }}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.fechaEstimadaLlegada
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
+                />
+                {errors.fechaEstimadaLlegada && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.fechaEstimadaLlegada}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Carga y Costos */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Package className="h-5 w-5 mr-2 text-blue-600" />
+              Carga y Tarifas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Descripción de la carga *
+                </label>
+                <textarea
+                  value={formData.cargaDescripcion}
+                  onChange={(e) => {
+                    setFormData({ ...formData, cargaDescripcion: e.target.value })
+                    if (errors.cargaDescripcion) setErrors({ ...errors, cargaDescripcion: '' })
+                  }}
+                  className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:ring-2 transition-all text-slate-900 ${errors.cargaDescripcion
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:ring-blue-500 focus:border-transparent'
+                    }`}
+                  placeholder="Descripción detallada de la carga..."
+                  rows={3}
+                />
+                {errors.cargaDescripcion && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.cargaDescripcion}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tarifa ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.tarifa}
+                  onChange={(e) => setFormData({ ...formData, tarifa: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="0.00"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {tarifaRuta ? 'Valor cargado automáticamente (editable)' : 'Ingresa manualmente o selecciona una ruta'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Distancia (km)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.distanciaKm}
+                  onChange={(e) => setFormData({ ...formData, distanciaKm: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="0.00"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {rutaSeleccionada ? 'Valor cargado automáticamente (editable)' : 'Ingresa manualmente o selecciona una ruta'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Comisión Operador ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.comisionOperador}
+                  onChange={(e) => setFormData({ ...formData, comisionOperador: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="0.00"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {tarifaRuta ? 'Valor cargado automáticamente (editable)' : 'Ingresa manualmente o selecciona una ruta'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Estado del viaje *
+                </label>
+                <select
+                  value={formData.estado}
+                  onChange={(e) => {
+                    const nuevoEstado = e.target.value
+                    if (nuevoEstado !== formData.estado && onEstadoChange) {
+                      onEstadoChange(viaje, nuevoEstado)
+                    } else {
+                      setFormData({ ...formData, estado: nuevoEstado })
+                    }
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg border-2 transition-all font-medium text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${formData.estado === 'PENDIENTE' ? 'border-yellow-200 bg-yellow-50 text-yellow-800' :
+                    formData.estado === 'EN_CURSO' ? 'border-blue-200 bg-blue-50 text-blue-800' :
+                      formData.estado === 'COMPLETADO' ? 'border-green-200 bg-green-50 text-green-800' :
+                        'border-red-200 bg-red-50 text-red-800'
+                    }`}
+                  required
+                >
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="EN_CURSO">En curso</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="RECHAZADO">Rechazado</option>
+                  <option value="CANCELADO">Cancelado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Costos Operativos */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Package className="h-5 w-5 mr-2 text-blue-600" />
+              Costos Operativos
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Casetas ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.casetas}
+                  onChange={(e) => setFormData({ ...formData, casetas: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Diesel - Litros
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.dieselLitros}
+                  onChange={(e) => setFormData({ ...formData, dieselLitros: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Ej: 150.5"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Diesel - Precio por Litro ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.dieselPrecioPorLitro}
+                  onChange={(e) => setFormData({ ...formData, dieselPrecioPorLitro: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Ej: 24.50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Diesel - Costo Total ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.dieselCostoTotal}
+                  onChange={(e) => setFormData({ ...formData, dieselCostoTotal: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none text-slate-900 font-semibold"
+                  placeholder="Se calcula automáticamente o ingresa manualmente"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {formData.dieselLitros && formData.dieselPrecioPorLitro
+                    ? `${formData.dieselLitros} L × $${formData.dieselPrecioPorLitro} = $${formData.dieselCostoTotal}`
+                    : 'Ingresa litros y precio para calcular o ingresa el costo directamente'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Gastos Extras ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.gastosExtras}
+                  onChange={(e) => setFormData({ ...formData, gastosExtras: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Costo Total ($) <span className="text-xs text-emerald-600">(Calculado automáticamente)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.costoTotal}
+                  readOnly
+                  disabled
+                  className="w-full px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-slate-900 font-semibold cursor-not-allowed"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Información Adicional */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2 text-blue-600" />
+              Información Adicional
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Observaciones
+                </label>
+                <textarea
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="Entrega prioritaria, cuidado con carga frágil, etc..."
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  URL de evidencia (opcional)
+                </label>
+                <input
+                  type="url"
+                  value={formData.evidenciaUrl}
+                  onChange={(e) => setFormData({ ...formData, evidenciaUrl: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-900"
+                  placeholder="https://ejemplo.com/evidencia.jpg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Actualizado por
+                </label>
+                <div className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-2 text-slate-500" />
+                    <span className="font-medium">{currentUser?.nombre || 'Cargando...'}</span>
+                    <span className="ml-2 text-sm text-slate-500">({currentUser?.email})</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Usuario autenticado actualmente</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 cursor-pointer py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !currentUser}
+              className="px-6 cursor-pointer py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Actualizando...' : 'Actualizar viaje'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+
+export default EditViajeModal

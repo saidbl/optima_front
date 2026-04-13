@@ -50,6 +50,7 @@ const availablePages = [
     '/dashboard/historico',
     '/dashboard/nomina-operativa',
     '/dashboard/nomina-fija',
+    '/dashboard/pronostico-cobranza',
 ]
 
 const menuItems = [
@@ -96,6 +97,11 @@ const menuItems = [
             { title: 'Factura extra', href: '/dashboard/facturas/extra' },
             { title: 'Liquidación en efectivo', href: '/dashboard/liquidacion_efectivo' }
         ]
+    },
+    {
+        title: 'Pronóstico de cobranza',
+        icon: DollarSign,
+        href: '/dashboard/pronostico-cobranza',
     },
     {
         title: 'Gastos',

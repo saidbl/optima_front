@@ -43,6 +43,7 @@ export const PERMISSIONS = {
       '/dashboard/graficos',
       '/dashboard/resumen-gastos',
       '/dashboard/historico',
+      '/dashboard/pronostico-cobranza',
       // El admin tiene acceso a TODO
       '*' // Wildcard: acceso completo
     ],
@@ -71,7 +72,8 @@ export const PERMISSIONS = {
       '/dashboard/nomina-operativa',
       '/dashboard/gastos',
       '/dashboard/graficos',
-      '/dashboard/resumen-gastos'
+      '/dashboard/resumen-gastos',
+      '/dashboard/pronostico-cobranza',
     ],
     displayName: 'Nomina'
   },
@@ -87,6 +89,7 @@ export const PERMISSIONS = {
       '/dashboard/operadores',
       '/dashboard/bitacora',
       '/dashboard/unidades',
+      '/dashboard/pronostico-cobranza',
     ],
     displayName: 'Logística de asignación de viajes'
   }

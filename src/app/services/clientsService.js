@@ -17,6 +17,39 @@ export const clientsService = {
     }
   },
 
+  async getAllClients(size = 200) {
+    try {
+      let page = 0;
+      let totalPages = 1;
+      let allClients = [];
+
+      while (page < totalPages) {
+        const data = await this.getClients(page, size);
+
+        const content = Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        allClients = [...allClients, ...content];
+
+        if (typeof data?.totalPages === "number") {
+          totalPages = data.totalPages;
+        } else {
+          totalPages = 1;
+        }
+
+        page += 1;
+      }
+
+      return allClients;
+    } catch (error) {
+      console.error("Error al obtener todos los clientes:", error);
+      throw error;
+    }
+  },
+
   // Crear un nuevo cliente
   async createClient(clientData) {
     try {

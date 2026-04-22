@@ -534,6 +534,8 @@ const ViajesPage = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('TODOS')
+  const [fechaInicioFiltro, setFechaInicioFiltro] = useState('');
+  const [fechaFinFiltro, setFechaFinFiltro] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
@@ -830,19 +832,32 @@ const ViajesPage = () => {
       (typeof viaje.ruta === 'string' && viaje.ruta.toLowerCase().includes(searchTerm.toLowerCase()))
 
     // Filtrar por Fecha/Pestaña seleccionada
-    let matchesTime = true
-    if (activeTabId && timeTabs.length > 0) {
-      const activeTab = timeTabs.find(t => t.id === activeTabId)
+    let matchesTime = true;
+
+    if (fechaInicioFiltro || fechaFinFiltro) {
+      if (viaje.fechaSalida) {
+        const viajeDate = new Date(viaje.fechaSalida + 'T12:00:00');
+
+        if (fechaInicioFiltro) {
+          const inicio = new Date(fechaInicioFiltro + 'T00:00:00');
+          matchesTime = matchesTime && viajeDate >= inicio;
+        }
+
+        if (fechaFinFiltro) {
+          const fin = new Date(fechaFinFiltro + 'T23:59:59');
+          matchesTime = matchesTime && viajeDate <= fin;
+        }
+      } else {
+        matchesTime = false;
+      }
+    } else if (activeTabId && timeTabs.length > 0) {
+      const activeTab = timeTabs.find(t => t.id === activeTabId);
       if (activeTab) {
-        // Asumiendo formato YYYY-MM-DD
         if (viaje.fechaSalida) {
-          // Ajustar zona horaria local para comparación correcta
-          const viajeDate = new Date(viaje.fechaSalida + 'T12:00:00') // Mediodía para evitar problemas de zona horaria
-          // Comparar solo fechas ignorando horas exactas si es necesario, pero activeTab.start/end ya cubre rango completo
-          matchesTime = viajeDate >= activeTab.start && viajeDate <= activeTab.end
+          const viajeDate = new Date(viaje.fechaSalida + 'T12:00:00');
+          matchesTime = viajeDate >= activeTab.start && viajeDate <= activeTab.end;
         } else {
-          // Si no tiene fecha, ¿lo mostramos? Probablemente no si estamos filtrando por tiempo.
-          matchesTime = false
+          matchesTime = false;
         }
       }
     }
@@ -867,7 +882,7 @@ const ViajesPage = () => {
     setCurrentPage(0)
     // Calcular total de páginas
     setTotalPages(Math.ceil(filteredViajes.length / pageSize))
-  }, [viajes, estadoFilter, searchTerm, activeTabId, pageSize]) // Dependencias que afectan el filtrado
+ }, [viajes, estadoFilter, searchTerm, activeTabId, fechaInicioFiltro, fechaFinFiltro, pageSize])
 
   // Paginación en cliente
   const paginatedViajes = filteredViajes.slice(
@@ -955,6 +970,11 @@ const ViajesPage = () => {
         />
       </div>
 
+      {(fechaInicioFiltro || fechaFinFiltro) && (
+        <div className="mb-4 mx-1 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          Estás usando un filtro manual por fechas. Las pestañas semanal/mensual quedan en segundo plano.
+        </div>
+      )}
       {/* Time Filter Switch & Tabs */}
       <div className="mb-0 bg-white rounded-t-xl border border-b-0 border-slate-200 shadow-sm mx-1">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
@@ -1007,7 +1027,7 @@ const ViajesPage = () => {
 
       {/* Filters (merged visually with tabs) */}
       <div className="bg-white rounded-b-xl rounded-t-none shadow-sm border border-t-0 border-slate-200 p-6 mb-6 mx-1 mt-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
             <input
@@ -1034,6 +1054,48 @@ const ViajesPage = () => {
               <option value="CANCELADO">Cancelados</option>
             </select>
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Fecha inicio
+            </label>
+            <input
+              type="date"
+              value={fechaInicioFiltro}
+              onChange={(e) => setFechaInicioFiltro(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-700"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Fecha fin
+            </label>
+            <input
+              type="date"
+              value={fechaFinFiltro}
+              onChange={(e) => setFechaFinFiltro(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-slate-700"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              setFechaInicioFiltro('')
+              setFechaFinFiltro('')
+            }}
+            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
+          >
+            Limpiar fechas
+          </button>
+
+          {(fechaInicioFiltro || fechaFinFiltro) && (
+            <div className="flex items-center px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+              Filtro manual activo
+            </div>
+          )}
         </div>
       </div>
 

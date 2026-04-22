@@ -3,14 +3,6 @@ import { X, Save, User, Calendar, DollarSign, Hash, FileText, AlertCircle, Credi
 import { authService } from '@/app/services/authService'
 import { viajesService } from '@/app/services/viajesService'
 
-// Función para obtener la fecha de ayer en formato YYYY-MM-DD
-const getYesterdayDate = () => {
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    return yesterday.toISOString().split('T')[0]
-}
-
 const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
     const [currentUserId, setCurrentUserId] = useState(null)
     const [loadingViajes, setLoadingViajes] = useState(false)
@@ -20,7 +12,7 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
     const [formData, setFormData] = useState({
         operadorId: '',
         periodoInicio: '',
-        periodoFin: getYesterdayDate(), // Fecha de ayer automáticamente
+        periodoFin: '', // Fecha de ayer automáticamente
         sueldoBase: '',
         comisionViajes: '',
         bono: '',
@@ -149,7 +141,7 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
             setFormData({
                 operadorId: '',
                 periodoInicio: '',
-                periodoFin: getYesterdayDate(), // Siempre la fecha de ayer
+                periodoFin: '', // Siempre la fecha de ayer
                 sueldoBase: '',
                 comisionViajes: '',
                 bono: '',
@@ -202,10 +194,12 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
             newErrors.periodoInicio = 'La fecha de inicio es requerida'
         }
 
-        // periodoFin ya no se valida porque se establece automáticamente (día anterior)
+        if (!formData.periodoFin) {
+            newErrors.periodoFin = 'La fecha de fin es requerida'
+        }
 
         if (formData.periodoInicio && formData.periodoFin && formData.periodoInicio > formData.periodoFin) {
-            newErrors.periodoInicio = 'La fecha de inicio debe ser anterior al día de ayer'
+            newErrors.periodoInicio = 'La fecha de inicio debe ser anterior o igual a la fecha de fin'
         }
 
         if (!formData.sueldoBase) {
@@ -370,7 +364,7 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
 
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Periodo Fin <span className="text-xs text-blue-600 font-normal">(Automático: día anterior)</span>
+                                Periodo Fin <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -378,13 +372,18 @@ const CreateNominaModal = ({ isOpen, onClose, onSubmit, operadores }) => {
                                     type="date"
                                     name="periodoFin"
                                     value={formData.periodoFin}
-                                    disabled
-                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg bg-slate-100 text-slate-700 cursor-not-allowed"
+                                    onChange={handleChange}
+                                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                        errors.periodoFin ? 'border-red-300' : 'border-slate-300'
+                                    }`}
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-slate-500">
-                                Se establece automáticamente como el día anterior a hoy
-                            </p>
+                            {errors.periodoFin && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <span>{errors.periodoFin}</span>
+                                </p>
+                            )}
                         </div>
                     </div>
 

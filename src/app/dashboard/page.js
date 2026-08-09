@@ -978,15 +978,15 @@ const loadDiaActualData = async () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
         {/* Facturas Pendientes - Fondo amarillo claro */}
         <FacturasSection
-          title="Pendientes"
-          subtitle="Menos de 7 días"
-          clientes={dashboardData?.facturasPendientes?.clientes || []}
-          totalMonto={dashboardData?.facturasPendientes?.totalMonto || 0}
-          bgColor="bg-amber-50"
-          borderColor="border-amber-200"
-          badge="bg-amber-100 text-amber-800"
-          icon={AlertCircle}
-        />
+  title="Pendientes por facturar"
+  subtitle="Viajes pendientes de facturación"
+  clientes={dashboardData?.facturasPorFacturar?.clientes || []}
+  totalMonto={dashboardData?.facturasPorFacturar?.totalMonto || 0}
+  bgColor="bg-amber-50"
+  borderColor="border-amber-200"
+  badge="bg-amber-100 text-amber-800"
+  icon={AlertCircle}
+/>
 
         {/* Facturas Sin Pagar - Fondo rojo claro */}
         <FacturasSection
